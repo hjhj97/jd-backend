@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  # -----------------------------------------------------------------------
+  # Redis - Celery 브로커 + 결과 저장소
+  # -----------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------
+  # FastAPI 서버
+  # -----------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      target: api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------
+  # Celery Worker
+  # -----------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      target: worker
+    env_file: .env
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # -----------------------------------------------------------------------
+  # Flower - Celery 모니터링 UI (선택 실행)
+  # docker compose --profile monitoring up -d
+  # -----------------------------------------------------------------------
+  flower:
+    build:
+      context: .
+      target: flower
+    ports:
+      - "5555:5555"
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  redis_data:

@@ -1,0 +1,102 @@
+import base64
+
+from celery.result import AsyncResult
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from loguru import logger
+
+from app.worker.celery_app import celery_app
+from app.worker.tasks import process_patent
+
+router = APIRouter()
+
+# 최대 업로드 크기: 100MB (200페이지 PDF 대비)
+_MAX_PDF_SIZE = 100 * 1024 * 1024
+
+
+@router.post("/analyze", status_code=202)
+async def analyze_patent(request: Request, file: UploadFile = File(...)):
+    """특허 PDF를 업로드하여 분석을 시작한다.
+
+    - 즉시 task_id를 반환(202 Accepted)
+    - GET /result/{task_id} 로 결과를 폴링
+    """
+    request_id: str = getattr(request.state, "request_id", "unknown")
+
+    # --- 파일 검증 ---
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="파일명이 비어있습니다.")
+
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"PDF 파일만 허용됩니다. (받은 파일: {file.filename})",
+        )
+
+    # PDF 바이트 읽기 → base64 인코딩 (Celery JSON 직렬화용)
+    pdf_bytes = await file.read()
+
+    if len(pdf_bytes) == 0:
+        raise HTTPException(status_code=400, detail="빈 파일입니다.")
+
+    if len(pdf_bytes) > _MAX_PDF_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"파일 크기가 너무 큽니다. (최대 {_MAX_PDF_SIZE // (1024*1024)}MB)",
+        )
+
+    pdf_b64 = base64.b64encode(pdf_bytes).decode()
+
+    logger.info(
+        f"PDF 업로드 완료 - filename={file.filename}, "
+        f"size={len(pdf_bytes)} bytes"
+    )
+
+    # Celery Task 큐잉
+    task = process_patent.delay(pdf_b64, request_id)
+
+    logger.info(f"Task 큐잉 완료 - task_id={task.id}")
+
+    return {
+        "task_id": task.id,
+        "status": "queued",
+        "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
+    }
+
+
+@router.get("/result/{task_id}")
+async def get_result(task_id: str):
+    """task_id로 분석 결과를 조회한다.
+
+    상태:
+    - queued: 대기 중
+    - PARSING / MODEL_1~5 / FORMATTING: 처리 중
+    - completed: 완료 (result 포함)
+    - failed: 실패 (error 포함)
+    """
+    task = AsyncResult(task_id, app=celery_app)
+
+    if task.state == "PENDING":
+        return {"task_id": task_id, "status": "queued"}
+
+    elif task.state == "SUCCESS":
+        return {
+            "task_id": task_id,
+            "status": "completed",
+            "result": task.result,
+        }
+
+    elif task.state == "FAILURE":
+        return {
+            "task_id": task_id,
+            "status": "failed",
+            "error": str(task.info),
+        }
+
+    else:
+        # 커스텀 상태: PARSING, MODEL_1, MODEL_2, ... FORMATTING
+        meta = task.info if isinstance(task.info, dict) else {}
+        return {
+            "task_id": task_id,
+            "status": task.state,
+            "detail": meta.get("detail", ""),
+        }
