@@ -1,4 +1,5 @@
 import base64
+import uuid
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -73,9 +74,31 @@ async def get_result(task_id: str):
     - completed: 완료 (result 포함)
     - failed: 실패 (error 포함)
     """
+    # task_id UUID 형식 검증
+    try:
+        uuid.UUID(task_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"유효하지 않은 task_id 형식입니다: {task_id}",
+        )
+
     task = AsyncResult(task_id, app=celery_app)
 
+    # PENDING 상태일 때 실제로 존재하는 task인지 확인
     if task.state == "PENDING":
+        # Redis에서 task 키가 존재하는지 확인
+        # (PENDING은 존재하지 않는 task도 PENDING으로 반환됨)
+        task_key = f"celery-task-meta-{task_id}"
+        backend = celery_app.backend
+        
+        # Redis에 task 정보가 있는지 확인
+        if not backend.get(task_key):
+            raise HTTPException(
+                status_code=404,
+                detail=f"존재하지 않는 task_id입니다: {task_id}",
+            )
+        
         return {"task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
