@@ -44,11 +44,54 @@ curl http://localhost:8000/health
 
 Swagger 문서: http://localhost:8000/docs
 
+로컬은 기본 `docker-compose.yml` 기준으로 `8000` 포트를 사용합니다.
+
+## EC2 최초 세팅 (Ubuntu 22.04)
+
+아래 순서대로 실행하면 EC2에서 Docker 기반 초기 세팅부터 배포까지 진행할 수 있습니다.
+
+```bash
+# 1) EC2 접속 후 프로젝트 클론
+git clone <repo-url> jd-backend
+cd jd-backend
+
+# 2) 초기 세팅 스크립트 실행 (Docker + Docker Compose)
+chmod +x scripts/setup-ec2.sh
+./scripts/setup-ec2.sh
+```
+
+`setup-ec2.sh` 실행 후에는 `docker` 그룹 권한 반영을 위해 **반드시 재접속**하세요.
+
+```bash
+# 3) SSH 재접속 후 버전 확인
+docker --version
+docker compose version
+
+# 4) 환경변수 설정
+cp .env.example .env
+vi .env
+
+# 5) 배포 스크립트 실행
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+
+### 참고
+
+- 배포 시 `deploy.sh`는 `docker-compose.yml + docker-compose.prod.yml`를 함께 사용해 API를 `80` 포트로 노출합니다.
+- API 확인: `http://<EC2_PUBLIC_IP>/health`
+- Swagger: `http://<EC2_PUBLIC_IP>/docs`
+- Flower(선택): `docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile monitoring up -d` 후 `http://<EC2_PUBLIC_IP>:5555`
+- EC2 보안그룹에서 최소한 `22`, `80` 포트만 허용하고, `6379`(Redis)는 외부에 열지 않는 것을 권장합니다.
+
 ## 실행 명령어
 
 ```bash
-# 기본 실행
+# 로컬 실행 (포트 8000)
 docker compose up -d
+
+# 배포 실행 (포트 80)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Flower 모니터링 포함
 docker compose --profile monitoring up -d
