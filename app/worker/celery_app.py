@@ -30,4 +30,6 @@ celery_app.conf.update(
     task_soft_time_limit=240,  # 4분 소프트 타임아웃
     # 결과 저장
     result_expires=3600,  # 1시간 보관
+    # Celery 성공 로그에서 result 출력 길이 제한
+    resultrepr_maxsize=200,
 )

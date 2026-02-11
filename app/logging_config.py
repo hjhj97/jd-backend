@@ -1,4 +1,5 @@
 import os
+import logging
 import sys
 
 from loguru import logger
@@ -12,10 +13,11 @@ _is_logging_configured = False
 def _console_format(record: dict) -> str:
     request_id = record["extra"].get("request_id", "system")
     return (
-        "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-        "<level>{level: <8}</level> | "
+        "<green>{time:MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <5}</level> | "
         f"<cyan>{request_id}</cyan> | "
-        "{message}"
+        "{name}:{function}:{line} | "
+        "{message}\n"
     )
 
 
@@ -40,6 +42,11 @@ def setup_logging() -> None:
         level=settings.LOG_LEVEL,
         format=_console_format,
     )
+
+    # Celery/Kombu 기본 로그 노이즈 완화
+    logging.getLogger("celery").setLevel(logging.WARNING)
+    logging.getLogger("kombu").setLevel(logging.WARNING)
+    logging.getLogger("amqp").setLevel(logging.WARNING)
 
     # 파일 출력 - 전체 로그 (JSON)
     logger.add(
