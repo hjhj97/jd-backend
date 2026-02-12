@@ -1,5 +1,8 @@
 import base64
+import json
 import uuid
+from functools import lru_cache
+from pathlib import Path
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -12,6 +15,20 @@ router = APIRouter()
 
 # 최대 업로드 크기: 100MB (200페이지 PDF 대비)
 _MAX_PDF_SIZE = 100 * 1024 * 1024
+_MOCK_OUTPUT_PATH = Path(__file__).resolve().parents[2] / "mock_output.json"
+
+
+@lru_cache(maxsize=1)
+def _load_mock_output() -> dict:
+    with _MOCK_OUTPUT_PATH.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+_RESULT_COMPLETED_EXAMPLE = {
+    "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+    "status": "completed",
+    "result": _load_mock_output(),
+}
 
 
 @router.post("/analyze", status_code=202)
@@ -64,7 +81,67 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
     }
 
 
-@router.get("/result/{task_id}")
+@router.get(
+    "/result/{task_id}",
+    responses={
+        200: {
+            "description": "분석 상태 또는 결과 반환",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "queued": {
+                            "summary": "대기 중",
+                            "value": {
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "queued",
+                            },
+                        },
+                        "processing": {
+                            "summary": "처리 중",
+                            "value": {
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "MODEL_2",
+                                "detail": "Model 2/5 실행 중",
+                            },
+                        },
+                        "completed_mock": {
+                            "summary": "완료 (mock_output.json 반환)",
+                            "value": _RESULT_COMPLETED_EXAMPLE,
+                        },
+                        "failed": {
+                            "summary": "실패",
+                            "value": {
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "failed",
+                                "error": "에러 메시지",
+                            },
+                        },
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "유효하지 않은 task_id 형식",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "유효하지 않은 task_id 형식입니다: invalid-id"
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "존재하지 않는 task_id",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "존재하지 않는 task_id입니다: a1b2c3d4-e5f6-7890-abcd-ef0123456789"
+                    }
+                }
+            },
+        },
+    },
+)
 async def get_result(task_id: str):
     """task_id로 분석 결과를 조회한다.
 
@@ -102,10 +179,12 @@ async def get_result(task_id: str):
         return {"task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
+        # 임시 mock 응답: 실제 task.result 대신 mock_output.json 반환
+        mock_result = _load_mock_output()
         return {
             "task_id": task_id,
             "status": "completed",
-            "result": task.result,
+            "result": mock_result,
         }
 
     elif task.state == "FAILURE":

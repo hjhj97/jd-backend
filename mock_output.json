@@ -1,0 +1,308 @@
+{
+  "basic_info": {
+    "pdf_name": "test_01.pdf",
+    "country": "US",
+    "field": "bio",
+    "patent": {
+      "title": "PROPIONIBACTERIUM ACNES PROPHYLACTIC AND THERAPEUTIC IMMUNE TREATMENT",
+      "applicant": {
+        "name": "Origimm Biotechnology GmbH",
+        "number": "17/801,099",
+        "date": "2021-02-22"
+      },
+      "grant": {
+        "number": null,
+        "date": null
+      },
+      "ipc_code": [
+        "A61K 39/05",
+        "A61P 17/10",
+        "A61P 31/04",
+        "C07K 14/195"
+      ],
+      "abstract": "The present invention discloses a vaccine comprising one or more of Dermatan sulfate-binding adhesin 1 of P. acnes (DsA1 polypeptide), Dermatan sulfate-binding adhesin 2 of P. acnes (DsA2 polypeptide), and putative iron-transport protein (PITP) polypeptide of P acnes, and/or a fragment and/or derivative of DsAl and/or DsA2 and/or PITP, wherein the DsAl polypeptide and the DsA2 polypeptide comprise from N- to C-terminus an N-terminal swapping region (“NSR”), a first conserved sub-domain (“CSD1”), a first swapping region (“SR1”), a second conserved sub-domain (“CSD2”), a second swapping region (“SR2”), a third conserved sub-domain (“CSD3”), a Pro-Thr repeat containing region (“PT repeat region”), and a C-terminal region (“CTR”), and wherein the PITP polypeptide comprises from N- to C-terminus an extended neocarzinostatin family domain (“ENFD”), a first swapping region (“SR1”), a heme-binding domain (“HbD”), a second swapping region (“SR2”) including the C-terminal LPXTG motif, and a hydrophobic C-terminal region (“hLAR”). Specification includes a Sequence Listing."
+    }
+  },
+
+  "naics": {
+    "primary": {
+      "code": "325414",
+      "title": "Biological Product (except Diagnostic) Manufacturing",
+      "description": "This U.S. industry comprises establishments primarily engaged in manufacturing vaccines, toxoids, blood fractions, and culture media of plant or animal origin (except diagnostic)."
+    },
+    "candidates": [
+      {
+        "code": "325412",
+        "title": "Pharmaceutical Preparation Manufacturing",
+        "description": "This U.S. industry comprises establishments primarily engaged in manufacturing in-vivo diagnostic substances and pharmaceutical preparations (except biological) intended for internal and external consumption in dose forms."
+      },
+      {
+        "code": "541714",
+        "title": "Research and Development in Biotechnology (except Nanobiotechnology)",
+        "description": "This U.S. industry comprises establishments primarily engaged in conducting biotechnology (except nanobiotechnology) research and experimental development."
+      }
+    ]
+  },
+
+  "evaluation": {
+    "ma_market_evaluation": {
+      "ma_market_score": "중간",
+      "ma_market_evaluation": "이 산업은 최근 성장성은 낮지만 회복세와 전략적 인수(전체 인수) 비중이 높아 주목할 만합니다. 미국이 인수자로 참여하는 국경 간 거래는 일부 제한적이지만, 기술은 백신 등 첨단 분야에 속합니다. 전반적으로 M&A 매력도는 중간 수준으로 평가됩니다.",
+      "ma_market_reason": "산업의 최근 M&A 성장성은 낮은 편임(최근 성장률 0.8%, 종합 점수 0.43). 다만 회복성 지표가 양호함(회복비율 1.065). 최근 거래 추세 또한 긍정적인 방향을 보임(연간 기울기 12.0). 국경 간 거래 비중은 32.7%로 비교적 개방적인 구조를 가짐. 반면 미국이 인수자인 비중은 7.7%로 낮아 확장성에는 제약이 존재함. 거래 구조는 outbound 중심으로 나타남. 전체 인수(Full Acquisition)가 전체 거래의 59.4%(845/1424)를 차지함. 이는 전략적 인수가 활발하게 이루어지고 있음을 의미함. 해당 특허는 백신 및 전문의약품(Vaccines/Specialty Drugs) 등 하이테크 분야에 해당함. 기술적 파급력과 전략적 가치가 높은 자산으로 판단함."
+    },
+    "tech_evaluation": {
+      "tech_score": "높음",
+      "tech_evaluation": "본 특허는 세부적인 아미노산 서열, 도메인 구조, 변이 및 조합에 대한 구체적 정의를 포함하고 있어 기술 설계의 완성도가 매우 높아 보입니다. 다양한 항원 및 에피토프 조합, 백신 조성물, 치료 및 생산 방법까지 포괄적으로 다루고 있어 신뢰성과 실현 가능성도 높게 평가됩니다. 명확한 서열 정보와 도메인 구분을 통해 재현성과 적용 범위가 넓은 점이 돋보입니다.",
+      "tech_reason": "IPC가 4개로 다양한 기술 분야를 포괄함. 인용문헌이 0건으로 신규성이 높음을 시사함. 청구항에서 아미노산 서열, 도메인, 변이, 조합 등 구체적이고 정량적인 정보가 다수 명시되어 있음. 백신, 치료제, 생산 방법 등 응용 범위가 넓고, 각 조성물 및 방법에 대한 상세한 구현 예시가 존재함. 전체적으로 기술적 구체성과 완성도가 매우 높음."
+    },
+    "rights_evaluation": {
+      "rights_score": "높음",
+      "rights_evaluation": "청구항의 수와 계열이 풍부하고, 다양한 유형의 발명에 대해 포괄적으로 권리가 설계되어 있어 전반적으로 권리 범위가 넓고 안정적으로 보입니다. 다만, 일부 독립항의 문구가 다소 길고 복잡하지만, 구체적이고 명확한 정의를 통해 권리 해석의 불확실성을 줄인 것으로 판단됩니다. 전반적으로 권리성 측면에서 매우 우수한 수준으로 평가됩니다.",
+      "rights_reason": "전체 청구항 수와 독립항 수가 평균을 크게 상회함. 청구항 계열도 4개로 다양하게 설계되어 있음. 독립항의 길이가 상당히 길고, 수치적 범위 및 특정 서열 정보가 포함되어 권리 범위가 일부 제한될 수 있음. 그러나 청구항이 물질, 조성물, 방법 등 다양한 유형을 포괄하고 있어 권리 설계가 매우 견고함. 정성적으로도 각 청구항이 구체적이고 명확하게 작성되어 있음."
+    }
+  },
+
+  "ipc_descriptions": [
+    {
+      "ipc_code": "A61K 39/05",
+      "short_description": "백신 및 면역치료 기술",
+      "long_description": "면역 반응을 유도하거나 조절하기 위한 백신 및 면역 물질 관련 기술."
+    },
+    {
+      "ipc_code": "A61P 17/10",
+      "short_description": "항염증 및 피부 질환 치료 기술",
+      "long_description": "염증 및 피부 질환 치료를 위한 의약 조성물 기술."
+    },
+    {
+      "ipc_code": "A61P 31/04",
+      "short_description": "항균·항미생물 치료 기술",
+      "long_description": "미생물 감염 치료 및 억제를 위한 기술."
+    },
+    {
+      "ipc_code": "C07K 14/195",
+      "short_description": "치료용 단백질 기술",
+      "long_description": "치료 목적의 단백질 및 폴리펩타이드 관련 기술."
+    }
+  ],
+
+  "recommend_companies": {
+    "target_similar_patents": [
+      {
+        "rank": 1,
+        "similarity": 0.8455,
+        "assignee": {
+          "name": "ORIGIMM Biotechnology GmbH",
+          "id": 41154
+        },
+        "title": "PROPIONIBACTERIUM ACNES PROPHYLACTIC AND THERAPEUTIC IMMUNE TREATMENT",
+        "ipc": [
+          "A61K39/05",
+          "A61P17/10",
+          "A61P31/04",
+          "C07K14/195"
+        ],
+        "abstract": "The present invention discloses a vaccine comprising one or more of Dermatan sulfate-binding adhesin 1 of P. acnes...",
+        "application_number": "17801099",
+        "application_date": "2021-02-22"
+      },
+      {
+        "rank": 2,
+        "similarity": 0.6451,
+        "assignee": {
+          "name": "S-Biomedic Nv",
+          "id": 47718
+        },
+        "title": "Methods and compositions for changing the composition of the skin microbiome",
+        "ipc": [
+          "C12N1/20",
+          "A61K9/00",
+          "A61K35/00",
+          "A61K35/74",
+          "A61P17/10"
+        ],
+        "abstract": "Aspects of the invention relate to compositions comprising one or more live bacterial strains for topical administration to the skin...",
+        "application_number": "17006054",
+        "application_date": "2020-08-28"
+      },
+      {
+        "rank": 3,
+        "similarity": 0.6451,
+        "assignee": {
+          "name": "S-Biomedic Nv",
+          "id": 47718
+        },
+        "title": "Methods and compositions for changing the composition of the skin microbiome",
+        "ipc": [
+          "C12N1/20",
+          "A61K35/74",
+          "C12Q1/04",
+          "C12Q1/533",
+          "A61P17/10"
+        ],
+        "abstract": "Aspects of the invention relate to compositions comprising one or more live bacterial strains for topical administration to the skin...",
+        "application_number": "15567941",
+        "application_date": "2016-04-20"
+      },
+      {
+        "rank": 4,
+        "similarity": 0.6368,
+        "assignee": {
+          "name": "BR Brands LLC",
+          "id": 8465
+        },
+        "title": "Composition and method for treating skin conditions using light and polycarboxylic acids",
+        "ipc": [
+          "A61K31/194",
+          "A61N5/06",
+          "A61N7/00",
+          "A61P17/10"
+        ],
+        "abstract": "The invention relates to compositions, methods, and kits for treating acne and other skin conditions affected by P. acnes...",
+        "application_number": "1020180014453",
+        "application_date": "2018-02-06"
+      },
+      {
+        "rank": 5,
+        "similarity": 0.6321,
+        "assignee": {
+          "name": "S-Biomedic Nv",
+          "id": 47718
+        },
+        "title": "Methods and compositions for altering the composition of the skin microbiome using bacterial strain mixtures",
+        "ipc": [
+          "A61K35/741",
+          "A61K47/42",
+          "A61K47/38",
+          "A61K9/06"
+        ],
+        "abstract": "The invention relates to compositions for topical administration comprising two or more live bacterial strains...",
+        "application_number": "1020197014360",
+        "application_date": "2017-10-19"
+      }
+    ],
+
+    "acquiror_similar_patents": [
+      {
+        "rank": 1,
+        "similarity": 0.6457,
+        "assignee": {
+          "name": null,
+          "id": null
+        },
+        "title": "NOVEL SKIN CARE COMPOSITION",
+        "ipc": [
+          "A61K35/74",
+          "A61K47/22",
+          "A61K8/49",
+          "A61K47/14",
+          "A61K8/37"
+        ],
+        "abstract": "The present invention generally relates to the field of skin care...",
+        "application_number": "17754431",
+        "application_date": "2019-12-18"
+      },
+      {
+        "rank": 2,
+        "similarity": 0.6417,
+        "assignee": {
+          "name": null,
+          "id": null
+        },
+        "title": "NOVEL SKIN CARE COMPOSITION",
+        "ipc": [
+          "A61K8/99",
+          "A61Q19/00",
+          "A61K35/74",
+          "A61K9/19"
+        ],
+        "abstract": "The present invention generally relates to the field of skin care...",
+        "application_number": "17754426",
+        "application_date": "2019-12-18"
+      },
+      {
+        "rank": 3,
+        "similarity": 0.6417,
+        "assignee": {
+          "name": null,
+          "id": null
+        },
+        "title": "NOVEL SKIN CARE COMPOSITION",
+        "ipc": [
+          "A61K8/99",
+          "A61K8/92",
+          "A61K8/73",
+          "A61K8/34",
+          "A61K8/67"
+        ],
+        "abstract": "The present invention generally relates to the field of skin care...",
+        "application_number": "17754432",
+        "application_date": "2019-12-18"
+      },
+      {
+        "rank": 4,
+        "similarity": 0.6399,
+        "assignee": {
+          "name": null,
+          "id": null
+        },
+        "title": "NOVEL SKIN CARE COMPOSITION",
+        "ipc": [
+          "A61K8/99",
+          "A61K8/14",
+          "A61K8/04",
+          "A61K8/92",
+          "A61K8/73"
+        ],
+        "abstract": "The present invention generally relates to the field of skin care...",
+        "application_number": "17754427",
+        "application_date": "2019-12-18"
+      },
+      {
+        "rank": 5,
+        "similarity": 0.6397,
+        "assignee": {
+          "name": null,
+          "id": null
+        },
+        "title": "NOVEL SKIN CARE COMPOSITION",
+        "ipc": [
+          "A61K8/99",
+          "A61K8/73",
+          "A61Q19/00"
+        ],
+        "abstract": "The present invention generally relates to the field of skin care...",
+        "application_number": "17754430",
+        "application_date": "2019-12-18"
+      }
+    ]
+  },
+
+
+  "ma_patterns": [
+    {
+      "acquirer_naics": "325412",
+      "one_line_description": "제약 생산의 가치 사슬 일원화",
+      "relation_label": "수직통합"
+    },
+    {
+      "acquirer_naics": "325414",
+      "one_line_description": "동일 산업 내 시장 점유 확대",
+      "relation_label": "수평확장"
+    },
+    {
+      "acquirer_naics": "523910",
+      "one_line_description": "투자 포트폴리오 다각화 목적",
+      "relation_label": "다각화"
+    },
+    {
+      "acquirer_naics": "541714",
+      "one_line_description": "바이오 연구 개발의 기술 흡수",
+      "relation_label": "기술흡수"
+    },
+    {
+      "acquirer_naics": "525990",
+      "one_line_description": "재무적 투자를 통한 위험 분산",
+      "relation_label": "다각화"
+    }
+  ]
+}
