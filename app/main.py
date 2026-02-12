@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
 
@@ -30,8 +31,42 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={
+            "success": False,
             "error": "Internal Server Error",
-            "detail": "서버 내부 오류가 발생했습니다.",
+            "msg": "서버 내부 오류가 발생했습니다.",
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """HTTPException 응답 포맷 통일."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(
+        f"HTTPException - request_id={request_id}, status={exc.status_code}, detail={exc.detail}"
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "msg": str(exc.detail),
+            "request_id": request_id,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """요청 바디/파라미터 유효성 검증 실패 응답 포맷 통일."""
+    request_id = getattr(request.state, "request_id", "unknown")
+    logger.warning(f"ValidationError - request_id={request_id}: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "msg": "요청 데이터 검증에 실패했습니다.",
+            "errors": exc.errors(),
             "request_id": request_id,
         },
     )
@@ -45,8 +80,9 @@ async def value_error_handler(request: Request, exc: ValueError):
     return JSONResponse(
         status_code=400,
         content={
+            "success": False,
             "error": "Bad Request",
-            "detail": str(exc),
+            "msg": str(exc),
             "request_id": request_id,
         },
     )
@@ -83,4 +119,4 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"success": True, "status": "ok"}

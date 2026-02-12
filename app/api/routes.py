@@ -25,13 +25,69 @@ def _load_mock_output() -> dict:
 
 
 _RESULT_COMPLETED_EXAMPLE = {
+    "success": True,
     "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
     "status": "completed",
     "result": _load_mock_output(),
 }
 
 
-@router.post("/analyze", status_code=202)
+@router.post(
+    "/analyze",
+    status_code=202,
+    responses={
+        202: {
+            "description": "분석 요청 접수",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                        "status": "queued",
+                        "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "잘못된 요청 (파일 형식/빈 파일 등)",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "PDF 파일만 허용됩니다. (받은 파일: sample.txt)",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+        413: {
+            "description": "파일 크기 초과",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "파일 크기가 너무 큽니다. (최대 100MB)",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "요청 데이터 검증 실패",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "요청 데이터 검증에 실패했습니다.",
+                        "errors": [],
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+    },
+)
 async def analyze_patent(request: Request, file: UploadFile = File(...)):
     """특허 PDF를 업로드하여 분석을 시작한다.
 
@@ -75,6 +131,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
     logger.info(f"Task 큐잉 완료 - task_id={task.id}")
 
     return {
+        "success": True,
         "task_id": task.id,
         "status": "queued",
         "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
@@ -92,6 +149,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                         "queued": {
                             "summary": "대기 중",
                             "value": {
+                                "success": True,
                                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
                                 "status": "queued",
                             },
@@ -99,6 +157,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                         "processing": {
                             "summary": "처리 중",
                             "value": {
+                                "success": True,
                                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
                                 "status": "MODEL_2",
                                 "detail": "Model 2/5 실행 중",
@@ -111,9 +170,10 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                         "failed": {
                             "summary": "실패",
                             "value": {
+                                "success": False,
                                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
                                 "status": "failed",
-                                "error": "에러 메시지",
+                                "msg": "에러 메시지",
                             },
                         },
                     }
@@ -125,7 +185,9 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "유효하지 않은 task_id 형식입니다: invalid-id"
+                        "success": False,
+                        "msg": "유효하지 않은 task_id 형식입니다: invalid-id",
+                        "request_id": "abcd1234",
                     }
                 }
             },
@@ -135,7 +197,22 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "존재하지 않는 task_id입니다: a1b2c3d4-e5f6-7890-abcd-ef0123456789"
+                        "success": False,
+                        "msg": "존재하지 않는 task_id입니다: a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "요청 데이터 검증 실패",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "요청 데이터 검증에 실패했습니다.",
+                        "errors": [],
+                        "request_id": "abcd1234",
                     }
                 }
             },
@@ -176,12 +253,13 @@ async def get_result(task_id: str):
                 detail=f"존재하지 않는 task_id입니다: {task_id}",
             )
         
-        return {"task_id": task_id, "status": "queued"}
+        return {"success": True, "task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
         # 임시 mock 응답: 실제 task.result 대신 mock_output.json 반환
         mock_result = _load_mock_output()
         return {
+            "success": True,
             "task_id": task_id,
             "status": "completed",
             "result": mock_result,
@@ -189,15 +267,17 @@ async def get_result(task_id: str):
 
     elif task.state == "FAILURE":
         return {
+            "success": False,
             "task_id": task_id,
             "status": "failed",
-            "error": str(task.info),
+            "msg": str(task.info),
         }
 
     else:
         # 커스텀 상태: PARSING, MODEL_1, MODEL_2, ... FORMATTING
         meta = task.info if isinstance(task.info, dict) else {}
         return {
+            "success": True,
             "task_id": task_id,
             "status": task.state,
             "detail": meta.get("detail", ""),
