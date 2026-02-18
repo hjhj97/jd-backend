@@ -1,3 +1,4 @@
 logs/
 
 .env
+/app/services/__pycache__
