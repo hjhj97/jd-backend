@@ -26,8 +26,8 @@ celery_app.conf.update(
     task_acks_late=True,  # 처리 완료 후 ACK
     task_reject_on_worker_lost=True,
     # 타임아웃
-    task_time_limit=300,  # 5분 (200페이지 PDF 대비)
-    task_soft_time_limit=240,  # 4분 소프트 타임아웃
+    task_time_limit=1800,  # 30분
+    task_soft_time_limit=1500,  # 25분 소프트 타임아웃
     # 결과 저장
     result_expires=3600,  # 1시간 보관
     # Celery 성공 로그에서 result 출력 길이 제한

@@ -1,15 +1,10 @@
-"""Celery Task 정의 - 특허 PDF 분석 파이프라인.
-
-단일 Task 방식: RunPod PDF 파싱 → 5개 모델 순차 실행 → 보고서 포맷팅
-프로토타입에서는 디버깅과 상태 추적이 간편한 단일 Task 방식을 사용.
-"""
+"""Celery Task 정의 - PDF 파싱 후 JDPatent 내부 서비스 연동."""
 
 from celery.exceptions import SoftTimeLimitExceeded
 from loguru import logger
 
-from app.models import model_1, model_2, model_3, model_4, model_5
+from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
 from app.services.pdf_service import parse_pdf_via_runpod
-from app.services.report_service import format_report
 from app.worker.celery_app import celery_app
 
 
@@ -18,8 +13,8 @@ from app.worker.celery_app import celery_app
     name="app.worker.tasks.process_patent",
     max_retries=2,
     default_retry_delay=10,
-    time_limit=300,
-    soft_time_limit=240,
+    time_limit=1800,
+    soft_time_limit=1500,
 )
 def process_patent(self, pdf_bytes_b64: str, request_id: str = "no-id"):
     """특허 PDF 분석 전체 파이프라인.
@@ -43,18 +38,11 @@ def process_patent(self, pdf_bytes_b64: str, request_id: str = "no-id"):
 
 
 def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
-    """실제 파이프라인 실행 로직."""
-    models = [
-        ("MODEL_1", model_1),
-        ("MODEL_2", model_2),
-        ("MODEL_3", model_3),
-        ("MODEL_4", model_4),
-        ("MODEL_5", model_5),
-    ]
+    """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
     # --- Step 1: RunPod PDF 파싱 ---
     task.update_state(state="PARSING", meta={"detail": "PDF 파싱 중"})
-    logger.info("Step 1/6 - RunPod PDF 파싱 시작")
+    logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     try:
         text = parse_pdf_via_runpod(pdf_bytes_b64)
@@ -64,28 +52,18 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
 
     logger.info(f"PDF 파싱 완료 - {len(text)} chars")
 
-    # --- Step 2~6: 모델 순차 실행 ---
-    result = text  # 첫 번째 모델은 텍스트를 입력으로 받음
+    # --- Step 2: JDPatent 작업 등록 ---
+    task.update_state(state="JDPATENT_SUBMIT", meta={"detail": "JDPatent 작업 등록 중"})
+    logger.info("Step 2/3 - JDPatent 작업 등록")
+    submit_jdpatent_job(
+        task_id=task.request.id,
+        raw_text=text,
+        user_id=task.request.id,
+    )
 
-    for i, (state_name, model) in enumerate(models, start=1):
-        task.update_state(
-            state=state_name,
-            meta={"detail": f"Model {i}/5 실행 중"},
-        )
-        logger.info(f"Step {i + 1}/6 - {state_name} 실행 시작")
-
-        try:
-            result = model.run(result)
-        except Exception as e:
-            logger.error(f"{state_name} 실패: {e}")
-            raise
-
-        logger.info(f"{state_name} 완료")
-
-    # --- Step 7: 보고서 포맷팅 ---
-    task.update_state(state="FORMATTING", meta={"detail": "보고서 포맷팅 중"})
-    logger.info("Step 7/7 - 보고서 포맷팅")
-
-    report = format_report(result)
-    logger.info("파이프라인 완료 - 보고서 생성 성공")
-    return report
+    # --- Step 3: JDPatent 결과 대기 ---
+    task.update_state(state="JDPATENT_PROCESSING", meta={"detail": "JDPatent 결과 대기 중"})
+    logger.info("Step 3/3 - JDPatent 결과 polling")
+    result = poll_jdpatent_result(task.request.id)
+    logger.info("JDPatent 결과 수신 완료")
+    return result

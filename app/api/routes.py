@@ -28,7 +28,7 @@ _RESULT_COMPLETED_EXAMPLE = {
     "success": True,
     "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
     "status": "completed",
-    "result": _load_mock_output(),
+    "result": {"basic_info": {}, "naics": {}, "evaluation": {}, "recommend_companies": {}},
 }
 
 
@@ -256,13 +256,11 @@ async def get_result(task_id: str):
         return {"success": True, "task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
-        # 임시 mock 응답: 실제 task.result 대신 mock_output.json 반환
-        mock_result = _load_mock_output()
         return {
             "success": True,
             "task_id": task_id,
             "status": "completed",
-            "result": mock_result,
+            "result": task.result,
         }
 
     elif task.state == "FAILURE":
