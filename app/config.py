@@ -6,8 +6,12 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://redis:6379/0"
 
     # RunPod
+    # Never hardcode real endpoint IDs or API keys in source.
     RUNPOD_API_URL: str = "https://api.runpod.ai/v2/YOUR_ENDPOINT_ID"
-    RUNPOD_API_KEY: str = "your_runpod_api_key_here"
+    RUNPOD_API_KEY: str = ""
+    RUNPOD_RUN_URL: str | None = None
+    RUNPOD_STATUS_URL: str | None = None
+    RUNPOD_OCR_DUMP_DIR: str = "/app/logs/ocr_results"
 
     # App
     LOG_LEVEL: str = "INFO"

@@ -3,6 +3,7 @@
 from celery.exceptions import SoftTimeLimitExceeded
 from loguru import logger
 
+from app.config import settings
 from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
 from app.services.pdf_service import parse_pdf_via_runpod
 from app.worker.celery_app import celery_app
@@ -45,12 +46,16 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     try:
-        text = parse_pdf_via_runpod(pdf_bytes_b64)
+        dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
+        text = parse_pdf_via_runpod(pdf_bytes_b64, dump_file_path=dump_file_path)
+        logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
     except Exception as e:
         logger.error(f"RunPod 호출 실패: {e}")
         raise task.retry(exc=e, countdown=10)
 
-    logger.info(f"PDF 파싱 완료 - {len(text)} chars")
+    text_length = len(text)
+    logger.info(f"[OCR_RAW_TEXT_LENGTH] chars={text_length}")
+    logger.info(f"PDF 파싱 완료 - {text_length} chars")
 
     # --- Step 2: JDPatent 작업 등록 ---
     task.update_state(state="JDPATENT_SUBMIT", meta={"detail": "JDPatent 작업 등록 중"})
