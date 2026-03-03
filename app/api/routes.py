@@ -44,7 +44,7 @@ _RESULT_COMPLETED_EXAMPLE = {
                         "success": True,
                         "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
                         "status": "queued",
-                        "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
+                        "msg": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
                     }
                 }
             },
@@ -134,7 +134,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
         "success": True,
         "task_id": task.id,
         "status": "queued",
-        "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
+        "msg": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
     }
 
 

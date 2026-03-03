@@ -4,13 +4,13 @@
 
 ## 기술 스택
 
-| 구분 | 기술 |
-|------|------|
-| 웹 프레임워크 | FastAPI |
-| 태스크 큐 | Celery 5.x + Redis 7.x |
-| PDF 파싱 | RunPod Serverless |
-| 로깅 | loguru (JSON 파일 + 콘솔) |
-| 컨테이너 | Docker + docker-compose |
+| 구분          | 기술                      |
+| ------------- | ------------------------- |
+| 웹 프레임워크 | FastAPI                   |
+| 태스크 큐     | Celery 5.x + Redis 7.x    |
+| PDF 파싱      | RunPod Serverless         |
+| 로깅          | loguru (JSON 파일 + 콘솔) |
+| 컨테이너      | Docker + docker-compose   |
 
 ## 아키텍처
 
@@ -106,12 +106,12 @@ tail -f logs/error.log
 
 ## 환경변수
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `REDIS_URL` | Redis 접속 URL | `redis://redis:6379/0` |
-| `RUNPOD_API_URL` | RunPod Serverless 엔드포인트 URL | - |
-| `RUNPOD_API_KEY` | RunPod API 키 | - |
-| `LOG_LEVEL` | 로그 레벨 | `INFO` |
+| 변수             | 설명                             | 기본값                 |
+| ---------------- | -------------------------------- | ---------------------- |
+| `REDIS_URL`      | Redis 접속 URL                   | `redis://redis:6379/0` |
+| `RUNPOD_API_URL` | RunPod Serverless 엔드포인트 URL | -                      |
+| `RUNPOD_API_KEY` | RunPod API 키                    | -                      |
+| `LOG_LEVEL`      | 로그 레벨                        | `INFO`                 |
 
 ---
 
@@ -122,6 +122,7 @@ tail -f logs/error.log
 서버 상태 확인.
 
 **Response** `200`
+
 ```json
 { "status": "ok" }
 ```
@@ -133,24 +134,26 @@ tail -f logs/error.log
 특허 PDF 파일을 업로드하여 분석을 시작한다.
 
 **Request**
+
 - Content-Type: `multipart/form-data`
 - Body: `file` (PDF 파일, 최대 100MB)
 
 **Response** `202 Accepted`
+
 ```json
 {
   "task_id": "a1b2c3d4-e5f6-...",
   "status": "queued",
-  "message": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요."
+  "msg": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요."
 }
 ```
 
 **Error Responses**
 
-| 코드 | 조건 |
-|------|------|
+| 코드  | 조건                                  |
+| ----- | ------------------------------------- |
 | `400` | PDF가 아닌 파일, 빈 파일, 파일명 누락 |
-| `413` | 파일 크기 100MB 초과 |
+| `413` | 파일 크기 100MB 초과                  |
 
 ---
 
@@ -159,16 +162,19 @@ tail -f logs/error.log
 분석 결과를 조회한다. 처리 완료 전까지 반복 폴링.
 
 **Path Parameter**
+
 - `task_id` (string): `POST /analyze` 에서 반환받은 태스크 ID
 
 **Response** — 상태에 따라 형태가 달라짐:
 
 #### 대기 중
+
 ```json
 { "task_id": "...", "status": "queued" }
 ```
 
 #### 처리 중 (커스텀 상태)
+
 ```json
 { "task_id": "...", "status": "MODEL_2", "detail": "Model 2/5 실행 중" }
 ```
@@ -176,6 +182,7 @@ tail -f logs/error.log
 가능한 `status` 값: `PARSING`, `MODEL_1`, `MODEL_2`, `MODEL_3`, `MODEL_4`, `MODEL_5`, `FORMATTING`
 
 #### 완료
+
 ```json
 {
   "task_id": "...",
@@ -197,6 +204,7 @@ tail -f logs/error.log
 ```
 
 #### 실패
+
 ```json
 { "task_id": "...", "status": "failed", "error": "에러 메시지" }
 ```
@@ -233,8 +241,8 @@ jd-backend/
 
 모든 로그에 `request_id`가 포함되어 API 요청부터 Celery Task까지 추적 가능.
 
-| 파일 | 내용 | 포맷 |
-|------|------|------|
-| 콘솔 (stderr) | 전체 로그 | 컬러 텍스트 |
-| `logs/app.log` | 전체 로그 | JSON (50MB rotation, 7일 보관) |
+| 파일             | 내용       | 포맷                            |
+| ---------------- | ---------- | ------------------------------- |
+| 콘솔 (stderr)    | 전체 로그  | 컬러 텍스트                     |
+| `logs/app.log`   | 전체 로그  | JSON (50MB rotation, 7일 보관)  |
 | `logs/error.log` | ERROR 이상 | JSON (10MB rotation, 30일 보관) |
