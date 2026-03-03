@@ -45,7 +45,14 @@ def poll_jdpatent_result(task_id: str) -> dict[str, Any]:
 
         status = data.get("status")
         if status == "SUCCESS":
-            return data.get("result", {})
+            result = data.get("result", {})
+            if isinstance(result, dict):
+                if str(result.get("status", "")).lower() == "error":
+                    reason = result.get("reason") or "JDPatent processing failed"
+                    raise RuntimeError(str(reason))
+                if "error" in result:
+                    raise RuntimeError(str(result.get("error")))
+            return result
         if status == "FAILURE":
             raise RuntimeError(data.get("error") or "JDPatent task failed")
 
