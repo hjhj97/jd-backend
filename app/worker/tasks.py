@@ -12,8 +12,6 @@ from app.worker.celery_app import celery_app
 @celery_app.task(
     bind=True,
     name="app.worker.tasks.process_patent",
-    max_retries=2,
-    default_retry_delay=10,
     time_limit=1800,
     soft_time_limit=1500,
 )
@@ -45,13 +43,9 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     task.update_state(state="PARSING", meta={"detail": "PDF 파싱 중"})
     logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
-    try:
-        dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
-        text = parse_pdf_via_runpod(pdf_bytes_b64, dump_file_path=dump_file_path)
-        logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
-    except Exception as e:
-        logger.error(f"RunPod 호출 실패: {e}")
-        raise task.retry(exc=e, countdown=10)
+    dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
+    text = parse_pdf_via_runpod(pdf_bytes_b64, dump_file_path=dump_file_path)
+    logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
 
     text_length = len(text)
     logger.info(f"[OCR_RAW_TEXT_LENGTH] chars={text_length}")
