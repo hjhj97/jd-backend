@@ -20,7 +20,7 @@ _HEADERS = {
 }
 
 # 최대 대기 시간 (초)
-_MAX_WAIT_SECONDS = 120
+_MAX_WAIT_SECONDS = 600
 _POLL_INTERVAL = 2
 
 
