@@ -40,7 +40,7 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
     # --- Step 1: RunPod PDF 파싱 ---
-    task.update_state(state="PARSING", meta={"detail": "PDF 파싱 중"})
+    task.update_state(state="PARSING", meta={"msg": "PDF 파싱 중"})
     logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
@@ -52,7 +52,7 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     logger.info(f"PDF 파싱 완료 - {text_length} chars")
 
     # --- Step 2: JDPatent 작업 등록 ---
-    task.update_state(state="JDPATENT_SUBMIT", meta={"detail": "JDPatent 작업 등록 중"})
+    task.update_state(state="JDPATENT_SUBMIT", meta={"msg": "JDPatent 작업 등록 중"})
     logger.info("Step 2/3 - JDPatent 작업 등록")
     submit_jdpatent_job(
         task_id=task.request.id,
@@ -61,7 +61,7 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     )
 
     # --- Step 3: JDPatent 결과 대기 ---
-    task.update_state(state="JDPATENT_PROCESSING", meta={"detail": "JDPatent 결과 대기 중"})
+    task.update_state(state="JDPATENT_PROCESSING", meta={"msg": "JDPatent 결과 대기 중"})
     logger.info("Step 3/3 - JDPatent 결과 polling")
     result = poll_jdpatent_result(task.request.id)
     logger.info("JDPatent 결과 수신 완료")

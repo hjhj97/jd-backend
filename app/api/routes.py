@@ -160,7 +160,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                                 "success": True,
                                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
                                 "status": "MODEL_2",
-                                "detail": "Model 2/5 실행 중",
+                                "msg": "Model 2/5 실행 중",
                             },
                         },
                         "completed_mock": {
@@ -278,5 +278,5 @@ async def get_result(task_id: str):
             "success": True,
             "task_id": task_id,
             "status": task.state,
-            "detail": meta.get("detail", ""),
+            "msg": meta.get("msg", ""),
         }
