@@ -15,19 +15,25 @@ from app.worker.celery_app import celery_app
     time_limit=1800,
     soft_time_limit=1500,
 )
-def process_patent(self, pdf_bytes_b64: str, request_id: str = "no-id"):
+def process_patent(
+    self,
+    pdf_bytes_b64: str,
+    request_id: str = "no-id",
+    original_filename: str | None = None,
+):
     """특허 PDF 분석 전체 파이프라인.
 
     Args:
         pdf_bytes_b64: base64 인코딩된 PDF 바이트
         request_id: API에서 전달받은 요청 추적 ID
+        original_filename: 사용자가 업로드한 원본 파일명
 
     Returns:
         최종 보고서 JSON dict
     """
     with logger.contextualize(request_id=request_id, task_id=self.request.id):
         try:
-            return _run_pipeline(self, pdf_bytes_b64)
+            return _run_pipeline(self, pdf_bytes_b64, original_filename=original_filename)
         except SoftTimeLimitExceeded:
             logger.error("소프트 타임아웃 초과 (240s)")
             raise
@@ -36,7 +42,7 @@ def process_patent(self, pdf_bytes_b64: str, request_id: str = "no-id"):
             raise
 
 
-def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
+def _run_pipeline(task, pdf_bytes_b64: str, original_filename: str | None = None) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
     # --- Step 1: RunPod PDF 파싱 ---
@@ -44,7 +50,11 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
-    text = parse_pdf_via_runpod(pdf_bytes_b64, dump_file_path=dump_file_path)
+    text = parse_pdf_via_runpod(
+        pdf_bytes_b64,
+        filename=original_filename,
+        dump_file_path=dump_file_path,
+    )
     logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
 
     text_length = len(text)
@@ -57,7 +67,7 @@ def _run_pipeline(task, pdf_bytes_b64: str) -> dict:
     submit_jdpatent_job(
         task_id=task.request.id,
         raw_text=text,
-        user_id=task.request.id,
+        user_id=original_filename or task.request.id,
     )
 
     # --- Step 3: JDPatent 결과 대기 ---

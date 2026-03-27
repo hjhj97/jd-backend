@@ -170,7 +170,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
     )
 
     # Celery Task 큐잉
-    task = process_patent.delay(pdf_b64, request_id)
+    task = process_patent.delay(pdf_b64, request_id, file.filename)
 
     logger.info(f"Task 큐잉 완료 - task_id={task.id}")
 
