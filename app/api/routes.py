@@ -130,6 +130,18 @@ def _extract_jdpatent_error_code(raw_error: str) -> str | None:
                 }
             },
         },
+        500: {
+            "description": "서버 내부 오류",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "서버 내부 오류가 발생했습니다.",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
     },
 )
 async def analyze_patent(request: Request, file: UploadFile = File(...)):
@@ -220,6 +232,42 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                                 "msg": "에러 메시지",
                             },
                         },
+                        "failed_not_patent": {
+                            "summary": "실패 - 특허 문서 아님",
+                            "value": {
+                                "success": False,
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "not_a_patent_document",
+                                "msg": "평가 대상 특허가 아닙니다",
+                            },
+                        },
+                        "failed_runpod_large_pdf": {
+                            "summary": "실패 - OCR 입력 용량 초과",
+                            "value": {
+                                "success": False,
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "runpod_pdf_too_large",
+                                "msg": "OCR 처리 가능한 파일 크기를 초과했습니다.",
+                            },
+                        },
+                        "failed_runpod_timeout": {
+                            "summary": "실패 - OCR 타임아웃",
+                            "value": {
+                                "success": False,
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "runpod_timeout",
+                                "msg": "OCR 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+                            },
+                        },
+                        "failed_jdpatent_timeout": {
+                            "summary": "실패 - JDPatent 타임아웃",
+                            "value": {
+                                "success": False,
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "jdpatent_timeout",
+                                "msg": "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+                            },
+                        },
                     }
                 }
             },
@@ -256,6 +304,18 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
                         "success": False,
                         "msg": "요청 데이터 검증에 실패했습니다.",
                         "errors": [],
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "서버 내부 오류",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "서버 내부 오류가 발생했습니다.",
                         "request_id": "abcd1234",
                     }
                 }
