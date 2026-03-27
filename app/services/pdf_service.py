@@ -81,12 +81,33 @@ def parse_pdf_via_runpod(
 
     logger.info("RunPod OCR 요청 전송 시작")
     with httpx.Client(timeout=30.0) as client:
-        run_response = client.post(
-            _RUNPOD_RUN_URL,
-            headers=_HEADERS,
-            json={"input": payload_input},
-        )
-        run_response.raise_for_status()
+        try:
+            run_response = client.post(
+                _RUNPOD_RUN_URL,
+                headers=_HEADERS,
+                json={"input": payload_input},
+            )
+            run_response.raise_for_status()
+        except httpx.TimeoutException as exc:
+            raise RuntimeError("runpod_timeout") from exc
+        except httpx.HTTPStatusError as exc:
+            response = exc.response
+            status_code = response.status_code if response is not None else None
+            body_text = ""
+            try:
+                body_text = response.text if response is not None else ""
+            except Exception:
+                body_text = ""
+
+            body_lc = body_text.lower()
+            if status_code == 400 and any(
+                key in body_lc for key in ["too large", "payload", "request body", "body size", "input too long"]
+            ):
+                raise RuntimeError("runpod_pdf_too_large") from exc
+            if status_code == 400:
+                raise RuntimeError("runpod_bad_request") from exc
+            raise RuntimeError(f"runpod_http_{status_code or 'unknown'}") from exc
+
         run_data = run_response.json()
 
     job_id = run_data.get("id")
@@ -98,11 +119,18 @@ def parse_pdf_via_runpod(
     elapsed = 0
     with httpx.Client(timeout=20.0) as client:
         while elapsed < _MAX_WAIT_SECONDS:
-            status_response = client.get(
-                f"{_RUNPOD_STATUS_URL}/{job_id}",
-                headers=_HEADERS,
-            )
-            status_response.raise_for_status()
+            try:
+                status_response = client.get(
+                    f"{_RUNPOD_STATUS_URL}/{job_id}",
+                    headers=_HEADERS,
+                )
+                status_response.raise_for_status()
+            except httpx.TimeoutException as exc:
+                raise RuntimeError("runpod_timeout") from exc
+            except httpx.HTTPStatusError as exc:
+                response = exc.response
+                status_code = response.status_code if response is not None else None
+                raise RuntimeError(f"runpod_http_{status_code or 'unknown'}") from exc
             status_data = status_response.json()
             status = str(status_data.get("status", "")).upper()
 
@@ -143,6 +171,4 @@ def parse_pdf_via_runpod(
             time.sleep(_POLL_INTERVAL)
             elapsed += _POLL_INTERVAL
 
-    raise RuntimeError(
-        f"RunPod 타임아웃 - job_id={job_id}, elapsed={elapsed}s (max={_MAX_WAIT_SECONDS}s)"
-    )
+    raise RuntimeError("runpod_timeout")

@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 import uuid
 from functools import lru_cache
 from pathlib import Path
@@ -16,6 +17,16 @@ router = APIRouter()
 # 최대 업로드 크기: 100MB (200페이지 PDF 대비)
 _MAX_PDF_SIZE = 100 * 1024 * 1024
 _MOCK_OUTPUT_PATH = Path(__file__).resolve().parents[2] / "mock_output.json"
+_JDPATENT_ERROR_MESSAGES = {
+    "not_a_patent_document": "평가 대상 특허가 아닙니다",
+    "runpod_pdf_too_large": "OCR 처리 가능한 파일 크기를 초과했습니다.",
+    "runpod_bad_request": "OCR 요청 형식이 올바르지 않습니다.",
+    "runpod_timeout": "OCR 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+    "runpod_http_400": "OCR 요청이 거부되었습니다.",
+    "runpod_http_413": "OCR 처리 가능한 파일 크기를 초과했습니다.",
+    "runpod_http_unknown": "OCR 요청 처리 중 오류가 발생했습니다.",
+    "jdpatent_timeout": "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+}
 
 
 @lru_cache(maxsize=1)
@@ -30,6 +41,39 @@ _RESULT_COMPLETED_EXAMPLE = {
     "status": "completed",
     "result": {"basic_info": {}, "naics": {}, "evaluation": {}, "recommend_companies": {}},
 }
+
+
+def _extract_jdpatent_error_code(raw_error: str) -> str | None:
+    """JDPatent 에러 문자열에서 표준 error code를 추출한다."""
+    text = (raw_error or "").strip()
+    if not text:
+        return None
+    text_lc = text.lower()
+
+    # 0) known timeout patterns
+    if "jdpatent polling timeout" in text_lc:
+        return "jdpatent_timeout"
+    if "runpod timeout" in text_lc or "runpod 타임아웃" in text_lc:
+        return "runpod_timeout"
+
+    # 1) pure code 형태 (예: "not_a_patent_document")
+    if re.fullmatch(r"[a-z0-9_]+", text):
+        return text
+
+    # 2) JSON dict 문자열 형태 (예: '{"error":"..."}')
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict) and isinstance(parsed.get("error"), str):
+            return parsed["error"]
+    except Exception:
+        pass
+
+    # 3) 문자열 내부에 JSON 조각이 섞인 형태
+    match = re.search(r'"error"\s*:\s*"([a-z0-9_]+)"', text)
+    if match:
+        return match.group(1)
+
+    return None
 
 
 @router.post(
@@ -264,11 +308,21 @@ async def get_result(task_id: str):
         }
 
     elif task.state == "FAILURE":
+        raw_error = str(task.info)
+        error_code = _extract_jdpatent_error_code(raw_error)
+        if error_code and error_code in _JDPATENT_ERROR_MESSAGES:
+            return {
+                "success": False,
+                "task_id": task_id,
+                "status": error_code,
+                "msg": _JDPATENT_ERROR_MESSAGES[error_code],
+            }
+
         return {
             "success": False,
             "task_id": task_id,
             "status": "failed",
-            "msg": str(task.info),
+            "msg": raw_error,
         }
 
     else:
