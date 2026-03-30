@@ -17,23 +17,30 @@ from app.worker.celery_app import celery_app
 )
 def process_patent(
     self,
-    pdf_bytes_b64: str,
+    pdf_bytes_b64: str | None,
     request_id: str = "no-id",
     original_filename: str | None = None,
+    pdf_url: str | None = None,
 ):
     """특허 PDF 분석 전체 파이프라인.
 
     Args:
-        pdf_bytes_b64: base64 인코딩된 PDF 바이트
+        pdf_bytes_b64: base64 인코딩된 PDF 바이트 (선택)
         request_id: API에서 전달받은 요청 추적 ID
         original_filename: 사용자가 업로드한 원본 파일명
+        pdf_url: 임시 다운로드 URL (선택)
 
     Returns:
         최종 보고서 JSON dict
     """
     with logger.contextualize(request_id=request_id, task_id=self.request.id):
         try:
-            return _run_pipeline(self, pdf_bytes_b64, original_filename=original_filename)
+            return _run_pipeline(
+                self,
+                pdf_bytes_b64,
+                original_filename=original_filename,
+                pdf_url=pdf_url,
+            )
         except SoftTimeLimitExceeded:
             logger.error("소프트 타임아웃 초과 (240s)")
             raise
@@ -42,7 +49,12 @@ def process_patent(
             raise
 
 
-def _run_pipeline(task, pdf_bytes_b64: str, original_filename: str | None = None) -> dict:
+def _run_pipeline(
+    task,
+    pdf_bytes_b64: str | None,
+    original_filename: str | None = None,
+    pdf_url: str | None = None,
+) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
     # --- Step 1: RunPod PDF 파싱 ---
@@ -52,6 +64,7 @@ def _run_pipeline(task, pdf_bytes_b64: str, original_filename: str | None = None
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
     text = parse_pdf_via_runpod(
         pdf_bytes_b64,
+        pdf_url=pdf_url,
         filename=original_filename,
         dump_file_path=dump_file_path,
     )

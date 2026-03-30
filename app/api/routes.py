@@ -1,4 +1,3 @@
-import base64
 import json
 import re
 import uuid
@@ -7,8 +6,10 @@ from pathlib import Path
 
 from celery.result import AsyncResult
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 from loguru import logger
 
+from app.services.temp_pdf_service import resolve_temp_pdf_path, save_temp_pdf
 from app.worker.celery_app import celery_app
 from app.worker.tasks import process_patent
 
@@ -27,6 +28,14 @@ _JDPATENT_ERROR_MESSAGES = {
     "runpod_http_unknown": "OCR 요청 처리 중 오류가 발생했습니다.",
     "jdpatent_timeout": "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
 }
+
+
+def _is_valid_pdf_header(pdf_bytes: bytes) -> bool:
+    """PDF 파일 헤더(%PDF-)가 포함되어 있는지 확인."""
+    if not pdf_bytes:
+        return False
+    # 일부 생성기는 시작부에 개행/공백을 둘 수 있어 처음 1KB 범위에서 탐색.
+    return b"%PDF-" in pdf_bytes[:1024]
 
 
 @lru_cache(maxsize=1)
@@ -162,7 +171,7 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
             detail=f"PDF 파일만 허용됩니다. (받은 파일: {file.filename})",
         )
 
-    # PDF 바이트 읽기 → base64 인코딩 (Celery JSON 직렬화용)
+    # PDF 바이트 읽기
     pdf_bytes = await file.read()
 
     if len(pdf_bytes) == 0:
@@ -173,16 +182,23 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
             status_code=413,
             detail=f"파일 크기가 너무 큽니다. (최대 {_MAX_PDF_SIZE // (1024*1024)}MB)",
         )
+    if not _is_valid_pdf_header(pdf_bytes):
+        raise HTTPException(
+            status_code=400,
+            detail="유효한 PDF 파일이 아닙니다. 파일 형식을 확인해 주세요.",
+        )
 
-    pdf_b64 = base64.b64encode(pdf_bytes).decode()
+    temp_pdf = save_temp_pdf(pdf_bytes)
 
     logger.info(
         f"PDF 업로드 완료 - filename={file.filename}, "
-        f"size={len(pdf_bytes)} bytes"
+        f"size={len(pdf_bytes)} bytes, "
+        f"temp_file_id={temp_pdf.file_id}, "
+        f"expires_at={temp_pdf.expires_at}"
     )
 
     # Celery Task 큐잉
-    task = process_patent.delay(pdf_b64, request_id, file.filename)
+    task = process_patent.delay(None, request_id, file.filename, temp_pdf.signed_url)
 
     logger.info(f"Task 큐잉 완료 - task_id={task.id}")
 
@@ -192,6 +208,23 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
         "status": "queued",
         "msg": "분석 요청이 접수되었습니다. GET /api/v1/result/{task_id}로 결과를 확인하세요.",
     }
+
+
+@router.get("/temp-pdf/{file_id}")
+async def get_temp_pdf(file_id: str, expires: int, sig: str):
+    """RunPod worker가 접근할 임시 PDF 다운로드 엔드포인트."""
+    try:
+        path = resolve_temp_pdf_path(file_id, expires_at=expires, signature=sig)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="임시 파일을 찾을 수 없습니다.") from exc
+
+    return FileResponse(
+        path=path,
+        media_type="application/pdf",
+        filename=f"{file_id}.pdf",
+    )
 
 
 @router.get(

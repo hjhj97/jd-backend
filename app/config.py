@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     RUNPOD_STATUS_URL: str | None = None
     RUNPOD_OCR_DUMP_DIR: str = "/app/logs/ocr_results"
 
+    # 임시 PDF URL 전달용
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
+    TEMP_PDF_DIR: str = "/app/tmp/pdfs"
+    TEMP_PDF_TTL_SECONDS: int = 600
+    TEMP_PDF_CLEANUP_INTERVAL_SECONDS: int = 60
+    TEMP_PDF_SIGNING_KEY: str = ""
+
     # App
     LOG_LEVEL: str = "INFO"
 

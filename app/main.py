@@ -1,4 +1,5 @@
 import uuid
+from asyncio import Task, create_task, sleep
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -6,7 +7,9 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from app.api.routes import router
+from app.config import settings
 from app.logging_config import setup_logging
+from app.services.temp_pdf_service import cleanup_expired_temp_pdfs
 
 # 로깅 초기화
 setup_logging()
@@ -115,6 +118,30 @@ async def logging_middleware(request: Request, call_next):
 # Router 등록
 # ---------------------------------------------------------------------------
 app.include_router(router, prefix="/api/v1")
+
+
+async def _temp_pdf_cleanup_loop() -> None:
+    interval_seconds = max(int(settings.TEMP_PDF_CLEANUP_INTERVAL_SECONDS), 5)
+    while True:
+        try:
+            removed = cleanup_expired_temp_pdfs()
+            if removed:
+                logger.info(f"임시 PDF 정리 완료 - removed={removed}")
+        except Exception as exc:
+            logger.warning(f"임시 PDF 정리 루프 오류: {exc}")
+        await sleep(interval_seconds)
+
+
+@app.on_event("startup")
+async def startup_temp_pdf_cleanup_task() -> None:
+    app.state.temp_pdf_cleanup_task = create_task(_temp_pdf_cleanup_loop())
+
+
+@app.on_event("shutdown")
+async def shutdown_temp_pdf_cleanup_task() -> None:
+    cleanup_task: Task | None = getattr(app.state, "temp_pdf_cleanup_task", None)
+    if cleanup_task is not None:
+        cleanup_task.cancel()
 
 
 @app.get("/health")
