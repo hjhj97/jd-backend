@@ -49,12 +49,29 @@ def poll_jdpatent_result(task_id: str) -> dict[str, Any]:
             if isinstance(result, dict):
                 if str(result.get("status", "")).lower() == "error":
                     reason = result.get("reason") or "JDPatent processing failed"
+                    logger.warning(
+                        "JDPatent logical error - task_id={}, reason={}",
+                        task_id,
+                        reason,
+                    )
                     raise RuntimeError(str(reason))
                 if "error" in result:
-                    raise RuntimeError(str(result.get("error")))
+                    raw_error = result.get("error")
+                    logger.warning(
+                        "JDPatent result error - task_id={}, error={}",
+                        task_id,
+                        raw_error,
+                    )
+                    raise RuntimeError(str(raw_error))
             return result
         if status == "FAILURE":
-            raise RuntimeError(data.get("error") or "JDPatent task failed")
+            raw_error = data.get("error") or "JDPatent task failed"
+            logger.warning(
+                "JDPatent task failure - task_id={}, raw_error={}",
+                task_id,
+                raw_error,
+            )
+            raise RuntimeError(str(raw_error))
 
         time.sleep(settings.JDPATENT_POLL_INTERVAL_SECONDS)
         elapsed += settings.JDPATENT_POLL_INTERVAL_SECONDS
@@ -62,4 +79,3 @@ def poll_jdpatent_result(task_id: str) -> dict[str, Any]:
     raise RuntimeError(
         f"JDPatent polling timeout - task_id={task_id}, elapsed={elapsed}s"
     )
-

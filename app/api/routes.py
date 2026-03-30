@@ -28,6 +28,7 @@ _JDPATENT_ERROR_MESSAGES = {
     "runpod_http_unknown": "OCR 요청 처리 중 오류가 발생했습니다.",
     "jdpatent_timeout": "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
 }
+_DEFAULT_JDPATENT_ERROR_MESSAGE = "특허 공보 문서 처리 도중 에러가 발생했습니다."
 
 
 def _is_valid_pdf_header(pdf_bytes: bytes) -> bool:
@@ -403,19 +404,21 @@ async def get_result(task_id: str):
     elif task.state == "FAILURE":
         raw_error = str(task.info)
         error_code = _extract_jdpatent_error_code(raw_error)
-        if error_code and error_code in _JDPATENT_ERROR_MESSAGES:
+        if error_code:
             return {
                 "success": False,
                 "task_id": task_id,
                 "status": error_code,
-                "msg": _JDPATENT_ERROR_MESSAGES[error_code],
+                "msg": _JDPATENT_ERROR_MESSAGES.get(
+                    error_code, _DEFAULT_JDPATENT_ERROR_MESSAGE
+                ),
             }
 
         return {
             "success": False,
             "task_id": task_id,
             "status": "failed",
-            "msg": raw_error,
+            "msg": _DEFAULT_JDPATENT_ERROR_MESSAGE,
         }
 
     else:
