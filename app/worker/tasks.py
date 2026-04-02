@@ -21,14 +21,16 @@ def process_patent(
     request_id: str = "no-id",
     original_filename: str | None = None,
     pdf_url: str | None = None,
+    country: str | None = None,
 ):
     """특허 PDF 분석 전체 파이프라인.
 
     Args:
-        pdf_bytes_b64: base64 인코딩된 PDF 바이트 (선택)
+        pdf_bytes_b64: 미사용 (S3 전환 시 제거 예정)
         request_id: API에서 전달받은 요청 추적 ID
         original_filename: 사용자가 업로드한 원본 파일명
-        pdf_url: 임시 다운로드 URL (선택)
+        pdf_url: 임시 다운로드 URL
+        country: 특허 국가 코드 ('KR' 또는 'US')
 
     Returns:
         최종 보고서 JSON dict
@@ -40,6 +42,7 @@ def process_patent(
                 pdf_bytes_b64,
                 original_filename=original_filename,
                 pdf_url=pdf_url,
+                country=country,
             )
         except SoftTimeLimitExceeded:
             logger.error("소프트 타임아웃 초과 (240s)")
@@ -54,6 +57,7 @@ def _run_pipeline(
     pdf_bytes_b64: str | None,
     original_filename: str | None = None,
     pdf_url: str | None = None,
+    country: str | None = None,
 ) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
@@ -67,6 +71,7 @@ def _run_pipeline(
         pdf_url=pdf_url,
         filename=original_filename,
         dump_file_path=dump_file_path,
+        patent_origin=country,
     )
     logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
 

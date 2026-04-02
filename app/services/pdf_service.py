@@ -49,11 +49,12 @@ def _extract_text_from_output(output: Any) -> str:
 
 
 def parse_pdf_via_runpod(
-    pdf_bytes_b64: str | None = None,
+    pdf_bytes_b64: str | None = None,  # TODO: S3 전환 시 제거
     *,
     pdf_url: str | None = None,
     filename: str | None = None,
     dump_file_path: str | None = None,
+    patent_origin: str | None = None,
 ) -> str:
     """RunPod serverless에 PDF를 전송하고 OCR 텍스트를 반환.
 
@@ -78,6 +79,8 @@ def parse_pdf_via_runpod(
         payload_input["pdf_base64"] = pdf_bytes_b64
     if pdf_url:
         payload_input["pdf_url"] = pdf_url
+    if patent_origin:
+        payload_input["patent_origin"] = patent_origin
 
     logger.info("RunPod OCR 요청 전송 시작")
     with httpx.Client(timeout=30.0) as client:

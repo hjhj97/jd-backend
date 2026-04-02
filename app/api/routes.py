@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from celery.result import AsyncResult
-from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from loguru import logger
 
@@ -104,13 +104,24 @@ def _extract_jdpatent_error_code(raw_error: str) -> str | None:
             },
         },
         400: {
-            "description": "잘못된 요청 (파일 형식/빈 파일 등)",
+            "description": "잘못된 요청 (파일 형식/빈 파일/country 값 오류 등)",
             "content": {
                 "application/json": {
-                    "example": {
-                        "success": False,
-                        "msg": "PDF 파일만 허용됩니다. (받은 파일: sample.txt)",
-                        "request_id": "abcd1234",
+                    "examples": {
+                        "invalid_file_type": {
+                            "summary": "PDF가 아닌 파일",
+                            "value": {
+                                "success": False,
+                                "msg": "PDF 파일만 허용됩니다. (받은 파일: sample.txt)",
+                                "request_id": "abcd1234",
+                            },
+                        },
+                        "invalid_country": {
+                            "summary": "허용되지 않는 country 값",
+                            "value": {
+                                "detail": "country는 'KR' 또는 'US'만 허용됩니다.",
+                            },
+                        },
                     }
                 }
             },
@@ -154,13 +165,24 @@ def _extract_jdpatent_error_code(raw_error: str) -> str | None:
         },
     },
 )
-async def analyze_patent(request: Request, file: UploadFile = File(...)):
+async def analyze_patent(
+    request: Request,
+    file: UploadFile = File(...),
+    country: str = Form("KR", description="특허 국가 코드. 'KR'(한국) 또는 'US'(미국)", enum=["KR", "US"]),
+):
     """특허 PDF를 업로드하여 분석을 시작한다.
 
     - 즉시 task_id를 반환(202 Accepted)
     - GET /result/{task_id} 로 결과를 폴링
+
+    **Request body (multipart/form-data)**
+    - `file`: 분석할 특허 PDF 파일
+    - `country`: 특허 국가 코드 (`KR` 또는 `US`)
     """
     request_id: str = getattr(request.state, "request_id", "unknown")
+
+    if country not in ("KR", "US"):
+        raise HTTPException(status_code=400, detail="country는 'KR' 또는 'US'만 허용됩니다.")
 
     # --- 파일 검증 ---
     if not file.filename:
@@ -190,16 +212,13 @@ async def analyze_patent(request: Request, file: UploadFile = File(...)):
         )
 
     temp_pdf = save_temp_pdf(pdf_bytes)
-
+    task = process_patent.delay(None, request_id, file.filename, temp_pdf.signed_url, country)
     logger.info(
         f"PDF 업로드 완료 - filename={file.filename}, "
         f"size={len(pdf_bytes)} bytes, "
         f"temp_file_id={temp_pdf.file_id}, "
         f"expires_at={temp_pdf.expires_at}"
     )
-
-    # Celery Task 큐잉
-    task = process_patent.delay(None, request_id, file.filename, temp_pdf.signed_url)
 
     logger.info(f"Task 큐잉 완료 - task_id={task.id}")
 
