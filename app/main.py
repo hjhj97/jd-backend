@@ -1,9 +1,11 @@
 import uuid
 from asyncio import Task, create_task, sleep
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from loguru import logger
 
 from app.api.routes import router
@@ -147,3 +149,11 @@ async def shutdown_temp_pdf_cleanup_task() -> None:
 @app.get("/health")
 async def health_check():
     return {"success": True, "status": "ok"}
+
+
+_STATIC_DIR = Path(__file__).parent / "static"
+
+@app.get("/sample")
+async def sample_report():
+    return FileResponse(_STATIC_DIR / "sample.html", media_type="text/html")
+

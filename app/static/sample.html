@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>특허 분석 리포트 — DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #39d353;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+
+  /* HEADER */
+  header { background: linear-gradient(135deg, #0d1117 0%, #1a1f35 100%); border-bottom: 1px solid var(--border); padding: 40px 48px 32px; }
+  .badge { display: inline-block; background: #1f3a5f; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: .5px; margin-bottom: 12px; }
+  header h1 { font-size: 22px; font-weight: 700; line-height: 1.4; max-width: 800px; margin-bottom: 16px; }
+  .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  .meta-item { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-muted); }
+  .meta-item strong { color: var(--text); }
+
+  /* LAYOUT */
+  main { max-width: 1200px; margin: 0 auto; padding: 40px 48px; display: grid; gap: 24px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 20px; }
+
+  /* SCORE HERO */
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .score-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 24px 20px; text-align: center; position: relative; overflow: hidden; }
+  .score-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .score-item.total::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+  .score-item.market::before { background: linear-gradient(90deg, var(--yellow), #e08a00); }
+  .score-item.tech::before { background: linear-gradient(90deg, var(--green), #2ea043); }
+  .score-item.rights::before { background: linear-gradient(90deg, var(--cyan), #26a641); }
+  .score-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+  .score-number { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+  .score-item.total .score-number { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .score-item.market .score-number { color: var(--yellow); }
+  .score-item.tech .score-number { color: var(--green); }
+  .score-item.rights .score-number { color: var(--cyan); }
+  .score-max { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .score-bar-wrap { margin-top: 14px; background: var(--border); border-radius: 4px; height: 5px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 4px; width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+  .score-item.total .score-bar { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+  .score-item.market .score-bar { background: var(--yellow); }
+  .score-item.tech .score-bar { background: var(--green); }
+  .score-item.rights .score-bar { background: var(--cyan); }
+
+  /* COUNTER ANIMATION */
+  .score-number[data-target] { opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; }
+  .score-number.visible { opacity: 1; transform: none; }
+
+  /* EVAL TEXT */
+  .eval-text { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-top: 12px; }
+  .eval-text.highlight { color: var(--text); background: var(--surface2); border-left: 3px solid var(--blue); padding: 14px 18px; border-radius: 0 8px 8px 0; }
+
+  /* TWO COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  /* NAICS */
+  .naics-primary { background: var(--surface2); border: 1px solid var(--blue); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+  .naics-code { font-size: 28px; font-weight: 800; color: var(--blue); letter-spacing: -1px; }
+  .naics-title { font-size: 15px; font-weight: 600; margin: 6px 0 4px; }
+  .naics-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .naics-candidate { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
+  .naics-candidate .naics-code { font-size: 18px; }
+
+  /* IPC CHIPS */
+  .ipc-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ipc-chip { background: #1f3a5f22; border: 1px solid #58a6ff44; border-radius: 8px; padding: 10px 14px; }
+  .ipc-chip .code { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+  .ipc-chip .desc { font-size: 11px; color: var(--text-muted); }
+
+  /* PATENT TABLE */
+  .patent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .patent-table td { padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .patent-table td:first-child { color: var(--text-muted); width: 140px; }
+  .patent-table tr:last-child td { border-bottom: none; }
+
+  /* M&A PATTERNS */
+  .pattern-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .pattern-item:last-child { border-bottom: none; }
+  .pattern-bar-bg { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+  .pattern-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 1.4s cubic-bezier(.4,0,.2,1) .3s; }
+  .pattern-label { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+  .label-수평확장 { background: #1f3a5f; color: var(--blue); }
+  .label-금융지원 { background: #2d2a1e; color: var(--yellow); }
+  .label-기술흡수 { background: #1a2e1a; color: var(--green); }
+  .label-수직통합 { background: #2a1f3a; color: var(--purple); }
+  .label-다각화 { background: #1e2a2a; color: var(--cyan); }
+  .pattern-percent { font-size: 15px; font-weight: 700; width: 46px; text-align: right; color: var(--text); }
+  .pattern-name { font-size: 12px; color: var(--text-muted); flex: 0 0 220px; }
+
+  /* SIMILARITY CARDS */
+  .sim-list { display: flex; flex-direction: column; gap: 10px; }
+  .sim-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: flex-start; }
+  .sim-rank { font-size: 11px; color: var(--text-muted); font-weight: 600; width: 24px; flex-shrink: 0; margin-top: 2px; }
+  .sim-body { flex: 1; min-width: 0; }
+  .sim-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sim-assignee { font-size: 12px; color: var(--blue); margin-bottom: 6px; }
+  .sim-score-row { display: flex; align-items: center; gap: 10px; }
+  .sim-score-bar-bg { flex: 1; background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
+  .sim-score-bar { height: 100%; border-radius: 4px; width: 0; transition: width 1.4s cubic-bezier(.4,0,.2,1) .5s; }
+  .sim-score-val { font-size: 13px; font-weight: 700; width: 42px; text-align: right; }
+  .sim-score-val.high { color: var(--green); }
+  .sim-score-val.mid { color: var(--yellow); }
+
+  /* TABS */
+  .tab-wrap { display: flex; gap: 2px; margin-bottom: 20px; background: var(--surface2); border-radius: 8px; padding: 4px; width: fit-content; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 500; padding: 7px 18px; border-radius: 6px; cursor: pointer; transition: all .2s; }
+  .tab-btn.active { background: var(--surface); color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ABSTRACT */
+  .abstract-text { font-size: 13px; color: var(--text-muted); line-height: 1.9; background: var(--surface2); padding: 18px 20px; border-radius: 8px; border-left: 3px solid var(--border); }
+
+  /* REASON DETAIL */
+  .reason-block { background: var(--surface2); border-radius: 8px; padding: 16px 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); line-height: 1.9; white-space: pre-line; }
+
+  @media (max-width: 768px) {
+    main { padding: 24px 20px; }
+    header { padding: 28px 20px; }
+    .score-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">🇺🇸 US Patent · Computer Storage</div>
+  <h1>DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</h1>
+  <div class="meta">
+    <div class="meta-item">📄 <strong>US 9,535,777 B2</strong></div>
+    <div class="meta-item">🏢 <strong>Intel Corporation</strong></div>
+    <div class="meta-item">📅 출원 <strong>2013-11-22</strong></div>
+    <div class="meta-item">✅ 등록 <strong>2017-01-03</strong></div>
+    <div class="meta-item">🏭 <strong>334112</strong> · Computer Storage Device Manufacturing</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- SCORE HERO -->
+  <div class="card">
+    <div class="card-title">종합 평가 점수</div>
+    <div class="score-grid">
+      <div class="score-item total">
+        <div class="score-label">종합 점수</div>
+        <div class="score-number" data-target="52" data-max="100">0</div>
+        <div class="score-max">/ 100</div>
+        <div class="score-bar-wrap"><div class="score-bar" data-pct="52"></div></div>
+      </div>
+      <div class="score-item market">
+        <div class="score-label">M&A 시장 매력도</div>
+        <div class="score-number" data-target="23" data-max="40">0</div>
+        <div class="score-max">/ 40</div>
+        <div class="score-bar-wrap"><div class="score-bar" data-pct="57.5"></div></div>
+      </div>
+      <div class="score-item tech">
+        <div class="score-label">기술성</div>
+        <div class="score-number" data-target="14" data-max="30">0</div>
+        <div class="score-max">/ 30</div>
+        <div class="score-bar-wrap"><div class="score-bar" data-pct="46.7"></div></div>
+      </div>
+      <div class="score-item rights">
+        <div class="score-label">권리성</div>
+        <div class="score-number" data-target="15" data-max="30">0</div>
+        <div class="score-max">/ 30</div>
+        <div class="score-bar-wrap"><div class="score-bar" data-pct="50"></div></div>
+      </div>
+    </div>
+    <div class="eval-text highlight" style="margin-top:20px;">
+      시장 매력도는 글로벌 개방성과 전략적 인수의 존재로 중간 수준을 유지하나, 최근 성장세 둔화와 내부 결속력 약화가 한계로 작용합니다. 기술성 측면에서는 트리거 이벤트 기반의 정교한 결함 관리 방식이 완성도를 높이지만, 선행기술과의 차별성이 뚜렷하게 부각되지는 않습니다. 권리성은 다양한 청구항과 계열로 변형 포섭력이 우수하나, 방법에 한정된 독립항과 긴 문구로 인해 권리 범위가 일부 제한될 수 있습니다.
+    </div>
+  </div>
+
+  <!-- PATENT INFO + IPC -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">특허 기본 정보</div>
+      <table class="patent-table">
+        <tr><td>발명의 명칭</td><td>DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</td></tr>
+        <tr><td>출원인</td><td>Intel Corporation</td></tr>
+        <tr><td>출원번호</td><td>14/087,282</td></tr>
+        <tr><td>출원일</td><td>2013-11-22</td></tr>
+        <tr><td>등록번호</td><td>US 9,535,777 B2</td></tr>
+        <tr><td>등록일</td><td>2017-01-03</td></tr>
+        <tr><td>국가</td><td>🇺🇸 미국</td></tr>
+        <tr><td>기술 분야</td><td>Computer</td></tr>
+      </table>
+      <div style="margin-top:20px;">
+        <div class="card-title">초록</div>
+        <div class="abstract-text">Systems and methods of managing defects in nonvolatile storage systems that can be used to avoid an inadvertent loss of data, while maintaining as much useful memory in the nonvolatile storage systems as possible.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">IPC 코드</div>
+      <div class="ipc-grid">
+        <div class="ipc-chip"><div class="code">G06F 11/00</div><div class="desc">컴퓨터 시스템 운영 및 관리</div></div>
+        <div class="ipc-chip"><div class="code">G11C 29/00</div><div class="desc">비휘발성 메모리 장치 구조 및 작동</div></div>
+        <div class="ipc-chip"><div class="code">G06F 11/07</div><div class="desc">데이터 처리 및 관리 시스템</div></div>
+        <div class="ipc-chip"><div class="code">G11B 20/18</div><div class="desc">메모리 관리 및 결함 감지</div></div>
+      </div>
+      <div style="margin-top:24px;">
+        <div class="card-title">NAICS 산업 분류</div>
+        <div class="naics-primary">
+          <div class="naics-code">334112</div>
+          <div class="naics-title">Computer Storage Device Manufacturing</div>
+          <div class="naics-desc">컴퓨터 저장 장치를 제조하는 사업체로, 자기·광학·플래시 미디어를 활용한 데이터 저장 및 검색 장치를 포함합니다.</div>
+        </div>
+        <div class="naics-candidate">
+          <div class="naics-code">518210</div>
+          <div class="naics-title" style="font-size:13px;">Computing Infrastructure & Data Processing</div>
+        </div>
+        <div class="naics-candidate">
+          <div class="naics-code">541512</div>
+          <div class="naics-title" style="font-size:13px;">Computer Systems Design Services</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVALUATION DETAIL -->
+  <div class="card">
+    <div class="card-title">세부 평가</div>
+    <div class="tab-wrap">
+      <button class="tab-btn active" onclick="switchTab(this,'tab-market')">M&A 시장</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-tech')">기술성</button>
+      <button class="tab-btn" onclick="switchTab(this,'tab-rights')">권리성</button>
+    </div>
+    <div id="tab-market" class="tab-content active">
+      <div class="eval-text" style="color:var(--text);">이 산업은 최근 몇 년간 M&A 성장률과 추세가 다소 부진하여, 시장의 확장성이나 활발한 거래 분위기는 제한적인 것으로 보입니다. 그러나 전체 거래 중 상당 비율이 국경 간 거래로 이루어져 있어 글로벌 시장에서의 개방성은 유지되고 있습니다. 해당 특허는 반도체 및 데이터 저장장치 분야의 High-Tech 기술로, 기술적 파급력은 높다고 평가됩니다.</div>
+      <div class="reason-block">최근 성장률: -0.154 → M&A 성장률 둔화
+회복 비율: 1.035 → 회복은 이루어졌으나 강도 약함
+최근 추세 기울기: -689.0 → 뚜렷한 하락세
+2024년 M&A: 14건 (내부인수 28.6%)
+2025년 M&A: 19건 (내부인수 0%)
+국경 간 M&A: 전체 87건 중 31% (outbound)
+Full Acquisition: 57건으로 전략적 인수 주류
+High-Tech 해당: Semiconductors, Disk Drives, Data Processing Services</div>
+    </div>
+    <div id="tab-tech" class="tab-content">
+      <div class="eval-text" style="color:var(--text);">트리거 이벤트 기반의 결함 관리 방법은 NVM 디바이스의 다양한 이벤트를 모니터링하고 이벤트 유형에 따라 정책을 적용하는 구조로 구체적으로 설명되어 있습니다. 사전적으로 메모리 페이지를 리타이어하는 점은 기존 단순 오류 감지 방식보다 정교하나, 선행기술과의 차별성이 충분히 부각되는지는 다소 아쉬운 부분입니다.</div>
+      <div class="reason-block">IPC 코드 수: 4개 (산업 평균 4.15)
+인용문헌 수: 13개 (산업 평균 10) → 선행기술 부담 높음
+독립항: 3개 (1, 3, 5번) — 모두 method claim으로 구성</div>
+    </div>
+    <div id="tab-rights" class="tab-content">
+      <div class="eval-text" style="color:var(--text);">청구항 구조가 전체적으로 탄탄하게 설계되어 있어 다양한 변형과 실시예를 포섭할 수 있는 점이 인상적입니다. 다만, 모든 독립항이 방법청구항으로만 구성되어 있어 시스템·장치 측면의 보호가 미흡합니다. 독립항의 문구가 상당히 길어 권리 범위가 명확해지는 동시에 회피 설계의 여지도 존재합니다.</div>
+      <div class="reason-block">전체 청구항: 20개 (평균 상회)
+독립항: 3개 / 종속항: 17개 / 계열: 2개
+독립항 단어 수: 186 → 문구가 길어 권리 범위 일부 제한 우려</div>
+    </div>
+  </div>
+
+  <!-- M&A PATTERNS -->
+  <div class="card">
+    <div class="card-title">M&A 인수 패턴 분석 · <span style="font-weight:400;color:var(--text-muted);">Computer Storage Device Manufacturing (334112)</span></div>
+    <div id="pattern-list">
+      <div class="pattern-item">
+        <span class="pattern-name">334112 · Computer Storage Device Mfg</span>
+        <span class="pattern-label label-수평확장">수평확장</span>
+        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="21.1" style="background:var(--blue);"></div></div>
+        <span class="pattern-percent">21.1%</span>
+      </div>
+      <div class="pattern-item">
+        <span class="pattern-name">523910 · Miscellaneous Intermediation</span>
+        <span class="pattern-label label-금융지원">금융지원</span>
+        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="15.5" style="background:var(--yellow);"></div></div>
+        <span class="pattern-percent">15.5%</span>
+      </div>
+      <div class="pattern-item">
+        <span class="pattern-name">541512 · Computer Systems Design</span>
+        <span class="pattern-label label-기술흡수">기술흡수</span>
+        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="8.5" style="background:var(--green);"></div></div>
+        <span class="pattern-percent">8.5%</span>
+      </div>
+      <div class="pattern-item">
+        <span class="pattern-name">334413 · Semiconductor Device Mfg</span>
+        <span class="pattern-label label-수직통합">수직통합</span>
+        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="8.5" style="background:var(--purple);"></div></div>
+        <span class="pattern-percent">8.5%</span>
+      </div>
+      <div class="pattern-item">
+        <span class="pattern-name">523999 · Misc Financial Investment</span>
+        <span class="pattern-label label-다각화">다각화</span>
+        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="4.2" style="background:var(--cyan);"></div></div>
+        <span class="pattern-percent">4.2%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMILAR PATENTS -->
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">유사 특허 — 피인수 기업</div>
+      <div class="sim-list">
+        <div class="sim-card">
+          <div class="sim-rank">#1</div>
+          <div class="sim-body">
+            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
+            <div class="sim-assignee">Netlist Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.85" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">63.9%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#2</div>
+          <div class="sim-body">
+            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
+            <div class="sim-assignee">Netlist Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.77" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">63.8%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#3</div>
+          <div class="sim-body">
+            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
+            <div class="sim-assignee">Netlist Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.77" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">63.8%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#4</div>
+          <div class="sim-body">
+            <div class="sim-title">NAND 플래시 메모리를 위한 결함 관리 정책들</div>
+            <div class="sim-assignee">Intel Corp</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="62.39" style="background:var(--yellow);"></div></div>
+              <span class="sim-score-val mid">62.4%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#5</div>
+          <div class="sim-body">
+            <div class="sim-title">Method and Apparatus for Selective Erase of NVM</div>
+            <div class="sim-assignee">Hewlett Packard Enterprise</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="59.02" style="background:var(--yellow);"></div></div>
+              <span class="sim-score-val mid">59.0%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">유사 특허 — 인수 기업</div>
+      <div class="sim-list">
+        <div class="sim-card">
+          <div class="sim-rank">#1</div>
+          <div class="sim-body">
+            <div class="sim-title">Defective memory unit screening in a memory system</div>
+            <div class="sim-assignee">Micron Technology Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="69.21" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">69.2%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#2</div>
+          <div class="sim-body">
+            <div class="sim-title">Defective memory unit screening in a memory system</div>
+            <div class="sim-assignee">Micron Technology Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="69.21" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">69.2%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#3</div>
+          <div class="sim-body">
+            <div class="sim-title">End of life performance throttling to prevent data loss</div>
+            <div class="sim-assignee">Micron Technology Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.29" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">64.3%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#4</div>
+          <div class="sim-body">
+            <div class="sim-title">End of life performance throttling to prevent data loss</div>
+            <div class="sim-assignee">Micron Technology Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.28" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">64.3%</span>
+            </div>
+          </div>
+        </div>
+        <div class="sim-card">
+          <div class="sim-rank">#5</div>
+          <div class="sim-body">
+            <div class="sim-title">End of life performance throttling to prevent data loss</div>
+            <div class="sim-assignee">Micron Technology Inc</div>
+            <div class="sim-score-row">
+              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.27" style="background:var(--green);"></div></div>
+              <span class="sim-score-val high">64.3%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // 탭 전환
+  function switchTab(btn, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+
+  // 숫자 카운트업 + 바 애니메이션
+  function animateCounters() {
+    document.querySelectorAll('.score-number[data-target]').forEach(el => {
+      el.classList.add('visible');
+      const target = parseInt(el.dataset.target);
+      const duration = 1200;
+      const start = performance.now();
+      function update(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(ease * target);
+        if (p < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    });
+    document.querySelectorAll('.score-bar[data-pct]').forEach(el => {
+      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 100);
+    });
+    document.querySelectorAll('.pattern-bar-fill[data-pct]').forEach(el => {
+      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 300);
+    });
+    document.querySelectorAll('.sim-score-bar[data-pct]').forEach(el => {
+      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 500);
+    });
+  }
+
+  // IntersectionObserver로 카드가 화면에 들어올 때 애니메이션 트리거
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { animateCounters(); observer.disconnect(); } });
+  }, { threshold: 0.2 });
+  observer.observe(document.querySelector('.score-grid'));
+</script>
+</body>
+</html>
