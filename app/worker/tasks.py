@@ -6,6 +6,7 @@ from loguru import logger
 from app.config import settings
 from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
 from app.services.pdf_service import parse_pdf_via_runpod
+from app.services.s3_service import delete_pdf
 from app.worker.celery_app import celery_app
 
 
@@ -22,6 +23,7 @@ def process_patent(
     original_filename: str | None = None,
     pdf_url: str | None = None,
     country: str | None = None,
+    s3_key: str | None = None,
 ):
     """특허 PDF 분석 전체 파이프라인.
 
@@ -29,8 +31,9 @@ def process_patent(
         pdf_bytes_b64: 미사용 (S3 전환 시 제거 예정)
         request_id: API에서 전달받은 요청 추적 ID
         original_filename: 사용자가 업로드한 원본 파일명
-        pdf_url: 임시 다운로드 URL
+        pdf_url: S3 presigned URL
         country: 특허 국가 코드 ('KR' 또는 'US')
+        s3_key: OCR 완료 후 삭제할 S3 오브젝트 키
 
     Returns:
         최종 보고서 JSON dict
@@ -43,6 +46,7 @@ def process_patent(
                 original_filename=original_filename,
                 pdf_url=pdf_url,
                 country=country,
+                s3_key=s3_key,
             )
         except SoftTimeLimitExceeded:
             logger.error("소프트 타임아웃 초과 (240s)")
@@ -58,6 +62,7 @@ def _run_pipeline(
     original_filename: str | None = None,
     pdf_url: str | None = None,
     country: str | None = None,
+    s3_key: str | None = None,
 ) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
@@ -66,13 +71,18 @@ def _run_pipeline(
     logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
-    text = parse_pdf_via_runpod(
-        pdf_bytes_b64,
-        pdf_url=pdf_url,
-        filename=original_filename,
-        dump_file_path=dump_file_path,
-        patent_origin=country,
-    )
+    try:
+        text = parse_pdf_via_runpod(
+            pdf_bytes_b64,
+            pdf_url=pdf_url,
+            filename=original_filename,
+            dump_file_path=dump_file_path,
+            patent_origin=country,
+        )
+    finally:
+        # OCR 성공/실패 무관하게 S3 파일 즉시 삭제
+        if s3_key:
+            delete_pdf(s3_key)
     logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
 
     text_length = len(text)

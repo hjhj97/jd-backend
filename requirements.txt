@@ -7,3 +7,4 @@ loguru
 python-multipart
 flower
 pydantic-settings
+boto3

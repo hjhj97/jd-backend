@@ -20,6 +20,13 @@ class Settings(BaseSettings):
     TEMP_PDF_CLEANUP_INTERVAL_SECONDS: int = 60
     TEMP_PDF_SIGNING_KEY: str = ""
 
+    # AWS S3
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "ap-northeast-2"
+    AWS_S3_BUCKET: str = ""
+    AWS_S3_PRESIGNED_URL_EXPIRES: int = 600  # presigned URL 유효 시간 (초)
+
     # App
     LOG_LEVEL: str = "INFO"
 

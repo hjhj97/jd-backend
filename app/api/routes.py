@@ -9,6 +9,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from loguru import logger
 
+from app.services.s3_service import upload_pdf
 from app.services.temp_pdf_service import resolve_temp_pdf_path, save_temp_pdf
 from app.worker.celery_app import celery_app
 from app.worker.tasks import process_patent
@@ -211,13 +212,13 @@ async def analyze_patent(
             detail="유효한 PDF 파일이 아닙니다. 파일 형식을 확인해 주세요.",
         )
 
-    temp_pdf = save_temp_pdf(pdf_bytes)
-    task = process_patent.delay(None, request_id, file.filename, temp_pdf.signed_url, country)
+    s3_key = f"uploads/{uuid.uuid4().hex}.pdf"
+    pdf_url = upload_pdf(pdf_bytes, s3_key)
+    task = process_patent.delay(None, request_id, file.filename, pdf_url, country, s3_key)
     logger.info(
         f"PDF 업로드 완료 - filename={file.filename}, "
         f"size={len(pdf_bytes)} bytes, "
-        f"temp_file_id={temp_pdf.file_id}, "
-        f"expires_at={temp_pdf.expires_at}"
+        f"s3_key={s3_key}"
     )
 
     logger.info(f"Task 큐잉 완료 - task_id={task.id}")
