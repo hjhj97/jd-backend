@@ -3,48 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>특허 분석 리포트 — DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</title>
+<title>특허 분석 리포트</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2128;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #8b949e;
-    --blue: #58a6ff;
-    --green: #3fb950;
-    --yellow: #d29922;
-    --red: #f85149;
-    --purple: #bc8cff;
-    --cyan: #39d353;
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --blue: #0969da;
+    --green: #1a7f37;
+    --yellow: #9a6700;
+    --purple: #8250df;
+    --cyan: #0f766e;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
-
-  /* HEADER */
-  header { background: linear-gradient(135deg, #0d1117 0%, #1a1f35 100%); border-bottom: 1px solid var(--border); padding: 40px 48px 32px; }
-  .badge { display: inline-block; background: #1f3a5f; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; letter-spacing: .5px; margin-bottom: 12px; }
+  header { background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%); border-bottom: 1px solid var(--border); padding: 40px 48px 32px; opacity: 0; transform: translateY(-8px); animation: headerIn .55s cubic-bezier(.2,.75,.2,1) forwards; }
+  .badge { display: inline-block; background: #e7f0ff; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
   header h1 { font-size: 22px; font-weight: 700; line-height: 1.4; max-width: 800px; margin-bottom: 16px; }
   .meta { display: flex; gap: 24px; flex-wrap: wrap; }
   .meta-item { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-muted); }
   .meta-item strong { color: var(--text); }
 
-  /* LAYOUT */
   main { max-width: 1200px; margin: 0 auto; padding: 40px 48px; display: grid; gap: 24px; }
-
-  /* CARD */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
   .card-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 20px; }
 
-  /* SCORE HERO */
   .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .score-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 24px 20px; text-align: center; position: relative; overflow: hidden; }
   .score-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
   .score-item.total::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
-  .score-item.market::before { background: linear-gradient(90deg, var(--yellow), #e08a00); }
-  .score-item.tech::before { background: linear-gradient(90deg, var(--green), #2ea043); }
-  .score-item.rights::before { background: linear-gradient(90deg, var(--cyan), #26a641); }
+  .score-item.market::before { background: linear-gradient(90deg, var(--yellow), #bf8700); }
+  .score-item.tech::before { background: linear-gradient(90deg, var(--green), #2da44e); }
+  .score-item.rights::before { background: linear-gradient(90deg, var(--cyan), #0d9488); }
   .score-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
   .score-number { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
   .score-item.total .score-number { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -52,425 +45,243 @@
   .score-item.tech .score-number { color: var(--green); }
   .score-item.rights .score-number { color: var(--cyan); }
   .score-max { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-  .score-bar-wrap { margin-top: 14px; background: var(--border); border-radius: 4px; height: 5px; overflow: hidden; }
-  .score-bar { height: 100%; border-radius: 4px; width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
-  .score-item.total .score-bar { background: linear-gradient(90deg, var(--blue), var(--purple)); }
-  .score-item.market .score-bar { background: var(--yellow); }
-  .score-item.tech .score-bar { background: var(--green); }
-  .score-item.rights .score-bar { background: var(--cyan); }
 
-  /* COUNTER ANIMATION */
-  .score-number[data-target] { opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; }
-  .score-number.visible { opacity: 1; transform: none; }
-
-  /* EVAL TEXT */
-  .eval-text { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-top: 12px; }
+  .eval-text { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-top: 12px; white-space: pre-line; }
   .eval-text.highlight { color: var(--text); background: var(--surface2); border-left: 3px solid var(--blue); padding: 14px 18px; border-radius: 0 8px 8px 0; }
 
-  /* TWO COL */
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 
-  /* NAICS */
   .naics-primary { background: var(--surface2); border: 1px solid var(--blue); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
   .naics-code { font-size: 28px; font-weight: 800; color: var(--blue); letter-spacing: -1px; }
   .naics-title { font-size: 15px; font-weight: 600; margin: 6px 0 4px; }
   .naics-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
-  .naics-candidate { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
-  .naics-candidate .naics-code { font-size: 18px; }
 
-  /* IPC CHIPS */
   .ipc-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-  .ipc-chip { background: #1f3a5f22; border: 1px solid #58a6ff44; border-radius: 8px; padding: 10px 14px; }
+  .ipc-chip { background: #e7f0ff; border: 1px solid #b6d0f7; border-radius: 8px; padding: 10px 14px; }
   .ipc-chip .code { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
   .ipc-chip .desc { font-size: 11px; color: var(--text-muted); }
 
-  /* PATENT TABLE */
   .patent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .patent-table td { padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
   .patent-table td:first-child { color: var(--text-muted); width: 140px; }
   .patent-table tr:last-child td { border-bottom: none; }
 
-  /* M&A PATTERNS */
-  .pattern-item { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .pattern-item:last-child { border-bottom: none; }
-  .pattern-bar-bg { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
-  .pattern-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 1.4s cubic-bezier(.4,0,.2,1) .3s; }
-  .pattern-label { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-  .label-수평확장 { background: #1f3a5f; color: var(--blue); }
-  .label-금융지원 { background: #2d2a1e; color: var(--yellow); }
-  .label-기술흡수 { background: #1a2e1a; color: var(--green); }
-  .label-수직통합 { background: #2a1f3a; color: var(--purple); }
-  .label-다각화 { background: #1e2a2a; color: var(--cyan); }
-  .pattern-percent { font-size: 15px; font-weight: 700; width: 46px; text-align: right; color: var(--text); }
-  .pattern-name { font-size: 12px; color: var(--text-muted); flex: 0 0 220px; }
-
-  /* SIMILARITY CARDS */
-  .sim-list { display: flex; flex-direction: column; gap: 10px; }
-  .sim-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; gap: 16px; align-items: flex-start; }
-  .sim-rank { font-size: 11px; color: var(--text-muted); font-weight: 600; width: 24px; flex-shrink: 0; margin-top: 2px; }
-  .sim-body { flex: 1; min-width: 0; }
-  .sim-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sim-assignee { font-size: 12px; color: var(--blue); margin-bottom: 6px; }
-  .sim-score-row { display: flex; align-items: center; gap: 10px; }
-  .sim-score-bar-bg { flex: 1; background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; }
-  .sim-score-bar { height: 100%; border-radius: 4px; width: 0; transition: width 1.4s cubic-bezier(.4,0,.2,1) .5s; }
-  .sim-score-val { font-size: 13px; font-weight: 700; width: 42px; text-align: right; }
-  .sim-score-val.high { color: var(--green); }
-  .sim-score-val.mid { color: var(--yellow); }
-
-  /* TABS */
   .tab-wrap { display: flex; gap: 2px; margin-bottom: 20px; background: var(--surface2); border-radius: 8px; padding: 4px; width: fit-content; }
-  .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 500; padding: 7px 18px; border-radius: 6px; cursor: pointer; transition: all .2s; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 500; padding: 7px 18px; border-radius: 6px; cursor: pointer; }
   .tab-btn.active { background: var(--surface); color: var(--text); }
   .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .tab-content.active { display: block; animation: tabFade .24s ease; }
 
-  /* ABSTRACT */
-  .abstract-text { font-size: 13px; color: var(--text-muted); line-height: 1.9; background: var(--surface2); padding: 18px 20px; border-radius: 8px; border-left: 3px solid var(--border); }
-
-  /* REASON DETAIL */
+  .abstract-text { font-size: 13px; color: var(--text-muted); line-height: 1.9; background: var(--surface2); padding: 18px 20px; border-radius: 8px; border-left: 3px solid var(--border); white-space: pre-line; }
   .reason-block { background: var(--surface2); border-radius: 8px; padding: 16px 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); line-height: 1.9; white-space: pre-line; }
+
+  .company-list { display: flex; flex-direction: column; gap: 14px; }
+  .company-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color .2s; }
+  .company-card:hover { border-color: #9ec4f4; }
+  .company-header { display: flex; align-items: center; gap: 14px; padding: 18px 20px; cursor: pointer; user-select: none; }
+  .company-rank { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; font-weight: 800; flex-shrink: 0; background: linear-gradient(135deg, #e7f0ff, #f2ecff); color: var(--blue); border: 1px solid #b6d0f7; }
+  .company-info { flex: 1; min-width: 0; }
+  .company-name { font-size: 15px; font-weight: 700; }
+  .company-meta { display: flex; gap: 16px; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+  .company-meta .val { color: var(--text); font-weight: 600; }
+  .company-chevron { font-size: 14px; color: var(--text-muted); transition: transform .25s; flex-shrink: 0; }
+  .company-card.open .company-chevron { transform: rotate(180deg); }
+  .company-patents { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1); }
+  .company-card.open .company-patents { max-height: 3000px; }
+  .company-patents-inner { padding: 0 20px 18px; border-top: 1px solid var(--border); }
+
+  .patent-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 10px; font-size: 13px; cursor: pointer; transition: border-color .2s; }
+  .patent-item:hover { border-color: #9ec4f4; }
+  .patent-item-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .patent-item-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .patent-item-title-text { font-weight: 600; }
+  .country-pill { font-size: 11px; font-weight: 700; background: #e7f0ff; color: #0969da; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .patent-item-chevron { font-size: 12px; color: var(--text-muted); transition: transform .25s; flex-shrink: 0; }
+  .patent-item.open .patent-item-chevron { transform: rotate(180deg); }
+  .patent-item-ipc { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .ipc-tag { font-size: 10px; font-weight: 600; color: var(--blue); background: #eef5ff; border: 1px solid #bfd4f4; border-radius: 4px; padding: 2px 7px; }
+  .patent-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .patent-item-abstract { font-size: 11px; color: var(--text-muted); line-height: 1.7; margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .patent-item.open .patent-item-abstract { display: block; -webkit-line-clamp: initial; -webkit-box-orient: initial; overflow: visible; }
+
+  .pattern-list { display: grid; gap: 10px; }
+  .pattern-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .pattern-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .pattern-reason { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.7; }
+  .muted { font-size: 13px; color: var(--text-muted); }
+  .reveal-item { opacity: 0; transform: translateY(14px); animation: sectionIn .55s cubic-bezier(.2,.75,.2,1) forwards; }
+
+  @keyframes headerIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes sectionIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes tabFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 
   @media (max-width: 768px) {
     main { padding: 24px 20px; }
     header { padding: 28px 20px; }
     .score-grid { grid-template-columns: 1fr 1fr; }
     .two-col { grid-template-columns: 1fr; }
+    .patent-item-head { align-items: flex-start; }
   }
 </style>
 </head>
 <body>
-
 <header>
-  <div class="badge">🇺🇸 US Patent · Computer Storage</div>
-  <h1>DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</h1>
+  <div class="badge">KR Patent · Biotechnology</div>
+  <h1>콩 모자이크 바이러스에 대한 병 저항성을 조절하는 콩 유래의 PSaC 유전자 및 이의 용도</h1>
   <div class="meta">
-    <div class="meta-item">📄 <strong>US 9,535,777 B2</strong></div>
-    <div class="meta-item">🏢 <strong>Intel Corporation</strong></div>
-    <div class="meta-item">📅 출원 <strong>2013-11-22</strong></div>
-    <div class="meta-item">✅ 등록 <strong>2017-01-03</strong></div>
-    <div class="meta-item">🏭 <strong>334112</strong> · Computer Storage Device Manufacturing</div>
+    <div class="meta-item">출원번호 <strong>10-2022-0062546</strong></div>
+    <div class="meta-item">출원인 <strong>서울대학교산학협력단</strong></div>
+    <div class="meta-item">출원일 <strong>2022-05-23</strong></div>
+    <div class="meta-item">등록일 <strong>2024-11-15</strong></div>
+    <div class="meta-item">산업 <strong>541714</strong> · Research and Development in Biotechnology (except Nanobiotechnology)</div>
   </div>
 </header>
 
 <main>
-
-  <!-- SCORE HERO -->
   <div class="card">
     <div class="card-title">종합 평가 점수</div>
     <div class="score-grid">
-      <div class="score-item total">
-        <div class="score-label">종합 점수</div>
-        <div class="score-number" data-target="52" data-max="100">0</div>
-        <div class="score-max">/ 100</div>
-        <div class="score-bar-wrap"><div class="score-bar" data-pct="52"></div></div>
-      </div>
-      <div class="score-item market">
-        <div class="score-label">M&A 시장 매력도</div>
-        <div class="score-number" data-target="23" data-max="40">0</div>
-        <div class="score-max">/ 40</div>
-        <div class="score-bar-wrap"><div class="score-bar" data-pct="57.5"></div></div>
-      </div>
-      <div class="score-item tech">
-        <div class="score-label">기술성</div>
-        <div class="score-number" data-target="14" data-max="30">0</div>
-        <div class="score-max">/ 30</div>
-        <div class="score-bar-wrap"><div class="score-bar" data-pct="46.7"></div></div>
-      </div>
-      <div class="score-item rights">
-        <div class="score-label">권리성</div>
-        <div class="score-number" data-target="15" data-max="30">0</div>
-        <div class="score-max">/ 30</div>
-        <div class="score-bar-wrap"><div class="score-bar" data-pct="50"></div></div>
-      </div>
+      <div class="score-item total"><div class="score-label">종합 점수</div><div class="score-number">61</div><div class="score-max">/ 100</div></div>
+      <div class="score-item market"><div class="score-label">M&A 시장 매력도</div><div class="score-number">27</div><div class="score-max">/ 50</div></div>
+      <div class="score-item tech"><div class="score-label">기술성</div><div class="score-number">19</div><div class="score-max">/ 25</div></div>
+      <div class="score-item rights"><div class="score-label">권리성</div><div class="score-number">15</div><div class="score-max">/ 25</div></div>
     </div>
-    <div class="eval-text highlight" style="margin-top:20px;">
-      시장 매력도는 글로벌 개방성과 전략적 인수의 존재로 중간 수준을 유지하나, 최근 성장세 둔화와 내부 결속력 약화가 한계로 작용합니다. 기술성 측면에서는 트리거 이벤트 기반의 정교한 결함 관리 방식이 완성도를 높이지만, 선행기술과의 차별성이 뚜렷하게 부각되지는 않습니다. 권리성은 다양한 청구항과 계열로 변형 포섭력이 우수하나, 방법에 한정된 독립항과 긴 문구로 인해 권리 범위가 일부 제한될 수 있습니다.
-    </div>
+    <div class="eval-text highlight">시장 매력도는 최근 성장률과 회복성이 낮아 단기적 확장성에는 한계가 있으나, 전략적 인수와 기술 확보 목적의 거래가 활발해 일정 수준의 기회는 기대할 수 있습니다. 기술성 측면에서는 구체적이고 차별화된 청구 구조와 신규성·진보성에서의 강점이 돋보이며, 권리성 역시 독립항과 계열의 적절한 분산으로 기본적인 권리망이 안정적으로 설계된 모습입니다. 다만, 시장 성장성의 제한과 권리 범위의 확장성 부족, 그리고 적용 분야의 집중성 등은 종합 점수에 영향을 주는 약점으로 작용합니다. 전반적으로 각 영역의 강점이 균형 있게 반영되어 중간 수준의 투자·사업화 잠재력을 보입니다. 세 영역이 조화롭게 어우러져, 첨단 바이오기술로서의 기술적 매력과 실질적 권리 확보, 그리고 전략적 시장 기회가 종합적으로 평가된 결과로 판단됩니다.</div>
   </div>
 
-  <!-- PATENT INFO + IPC -->
   <div class="two-col">
     <div class="card">
       <div class="card-title">특허 기본 정보</div>
       <table class="patent-table">
-        <tr><td>발명의 명칭</td><td>DEFECT MANAGEMENT POLICIES FOR NAND FLASH MEMORY</td></tr>
-        <tr><td>출원인</td><td>Intel Corporation</td></tr>
-        <tr><td>출원번호</td><td>14/087,282</td></tr>
-        <tr><td>출원일</td><td>2013-11-22</td></tr>
-        <tr><td>등록번호</td><td>US 9,535,777 B2</td></tr>
-        <tr><td>등록일</td><td>2017-01-03</td></tr>
-        <tr><td>국가</td><td>🇺🇸 미국</td></tr>
-        <tr><td>기술 분야</td><td>Computer</td></tr>
+        <tr><td>발명의 명칭</td><td>콩 모자이크 바이러스에 대한 병 저항성을 조절하는 콩 유래의 PSaC 유전자 및 이의 용도</td></tr>
+        <tr><td>출원인</td><td>서울대학교산학협력단</td></tr>
+        <tr><td>출원번호</td><td>10-2022-0062546</td></tr>
+        <tr><td>출원일</td><td>2022-05-23</td></tr>
+        <tr><td>등록번호</td><td>10-2732577</td></tr>
+        <tr><td>등록일</td><td>2024-11-15</td></tr>
+        <tr><td>국가</td><td>KR</td></tr>
+        <tr><td>기술 분야</td><td>Biotechnology</td></tr>
+        <tr><td>공보 유형</td><td>등록 특허공보</td></tr>
+        <tr><td>Kind Code</td><td>B1</td></tr>
       </table>
-      <div style="margin-top:20px;">
-        <div class="card-title">초록</div>
-        <div class="abstract-text">Systems and methods of managing defects in nonvolatile storage systems that can be used to avoid an inadvertent loss of data, while maintaining as much useful memory in the nonvolatile storage systems as possible.</div>
-      </div>
+      <div style="margin-top:20px;"><div class="card-title">초록</div><div class="abstract-text">본 발명은 콩 모자이크 바이러스에 대한 병 저항성을 조절하는 콩 유래의 PSaC(Photosystem I subunit VII) 유전자 및 이의 용도에 관한 것으로, 본 발명의 콩 유래 PSaC 유전자는 콩 모자이크 바이러스에 대한 병 저항성을 조절할 수 있으므로, 콩 모자이크 바이러스에 대한 저항성이 조절된 식물체를 개발하여 농작물의 생산성을 향상 시킬 수 있을 것으로 기대된다.</div></div>
     </div>
+
     <div class="card">
       <div class="card-title">IPC 코드</div>
-      <div class="ipc-grid">
-        <div class="ipc-chip"><div class="code">G06F 11/00</div><div class="desc">컴퓨터 시스템 운영 및 관리</div></div>
-        <div class="ipc-chip"><div class="code">G11C 29/00</div><div class="desc">비휘발성 메모리 장치 구조 및 작동</div></div>
-        <div class="ipc-chip"><div class="code">G06F 11/07</div><div class="desc">데이터 처리 및 관리 시스템</div></div>
-        <div class="ipc-chip"><div class="code">G11B 20/18</div><div class="desc">메모리 관리 및 결함 감지</div></div>
-      </div>
+      <div class="ipc-grid"><div class="ipc-chip"><div class="code">C12N 15/82</div><div class="desc">유전자 조작</div></div>
+<div class="ipc-chip"><div class="code">A01H 6/54</div><div class="desc">식물 저항성</div></div>
+<div class="ipc-chip"><div class="code">C07K 14/415</div><div class="desc">단백질 생산</div></div></div>
       <div style="margin-top:24px;">
         <div class="card-title">NAICS 산업 분류</div>
         <div class="naics-primary">
-          <div class="naics-code">334112</div>
-          <div class="naics-title">Computer Storage Device Manufacturing</div>
-          <div class="naics-desc">컴퓨터 저장 장치를 제조하는 사업체로, 자기·광학·플래시 미디어를 활용한 데이터 저장 및 검색 장치를 포함합니다.</div>
-        </div>
-        <div class="naics-candidate">
-          <div class="naics-code">518210</div>
-          <div class="naics-title" style="font-size:13px;">Computing Infrastructure & Data Processing</div>
-        </div>
-        <div class="naics-candidate">
-          <div class="naics-code">541512</div>
-          <div class="naics-title" style="font-size:13px;">Computer Systems Design Services</div>
+          <div class="naics-code">541714</div>
+          <div class="naics-title">Research and Development in Biotechnology (except Nanobiotechnology)</div>
+          <div class="naics-desc">This industry comprises establishments primarily engaged in conducting biotechnology (except nanobiotechnology) research and experimental development. Biotechnology (except nanobiotechnology) research and experimental development involves the study of the use of microorganisms and cellular and biomolecular processes to develop or alter living or non-living materials. This research and development in biotechnology (except nanobiotechnology) may result in development of new biotechnology (except nanobiotechnology) processes or in prototypes of new or genetically-altered products that may be reproduced, utilized, or implemented by various industries. Illustrative Examples: Cloning research and experimental development laboratories DNA technologies (e.g., microarrays) research and experimental development laboratories Nucleic acid chemistry research and experimental development laboratories Protein engineering research and experimental development laboratories Recombinant DNA research and experimental development laboratories</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- EVALUATION DETAIL -->
   <div class="card">
     <div class="card-title">세부 평가</div>
     <div class="tab-wrap">
-      <button class="tab-btn active" onclick="switchTab(this,'tab-market')">M&A 시장</button>
-      <button class="tab-btn" onclick="switchTab(this,'tab-tech')">기술성</button>
-      <button class="tab-btn" onclick="switchTab(this,'tab-rights')">권리성</button>
+      <button class="tab-btn active" onclick="switchTab(event, 'tab-market')">M&A 시장</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-tech')">기술성</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-rights')">권리성</button>
     </div>
-    <div id="tab-market" class="tab-content active">
-      <div class="eval-text" style="color:var(--text);">이 산업은 최근 몇 년간 M&A 성장률과 추세가 다소 부진하여, 시장의 확장성이나 활발한 거래 분위기는 제한적인 것으로 보입니다. 그러나 전체 거래 중 상당 비율이 국경 간 거래로 이루어져 있어 글로벌 시장에서의 개방성은 유지되고 있습니다. 해당 특허는 반도체 및 데이터 저장장치 분야의 High-Tech 기술로, 기술적 파급력은 높다고 평가됩니다.</div>
-      <div class="reason-block">최근 성장률: -0.154 → M&A 성장률 둔화
-회복 비율: 1.035 → 회복은 이루어졌으나 강도 약함
-최근 추세 기울기: -689.0 → 뚜렷한 하락세
-2024년 M&A: 14건 (내부인수 28.6%)
-2025년 M&A: 19건 (내부인수 0%)
-국경 간 M&A: 전체 87건 중 31% (outbound)
-Full Acquisition: 57건으로 전략적 인수 주류
-High-Tech 해당: Semiconductors, Disk Drives, Data Processing Services</div>
-    </div>
-    <div id="tab-tech" class="tab-content">
-      <div class="eval-text" style="color:var(--text);">트리거 이벤트 기반의 결함 관리 방법은 NVM 디바이스의 다양한 이벤트를 모니터링하고 이벤트 유형에 따라 정책을 적용하는 구조로 구체적으로 설명되어 있습니다. 사전적으로 메모리 페이지를 리타이어하는 점은 기존 단순 오류 감지 방식보다 정교하나, 선행기술과의 차별성이 충분히 부각되는지는 다소 아쉬운 부분입니다.</div>
-      <div class="reason-block">IPC 코드 수: 4개 (산업 평균 4.15)
-인용문헌 수: 13개 (산업 평균 10) → 선행기술 부담 높음
-독립항: 3개 (1, 3, 5번) — 모두 method claim으로 구성</div>
-    </div>
-    <div id="tab-rights" class="tab-content">
-      <div class="eval-text" style="color:var(--text);">청구항 구조가 전체적으로 탄탄하게 설계되어 있어 다양한 변형과 실시예를 포섭할 수 있는 점이 인상적입니다. 다만, 모든 독립항이 방법청구항으로만 구성되어 있어 시스템·장치 측면의 보호가 미흡합니다. 독립항의 문구가 상당히 길어 권리 범위가 명확해지는 동시에 회피 설계의 여지도 존재합니다.</div>
-      <div class="reason-block">전체 청구항: 20개 (평균 상회)
-독립항: 3개 / 종속항: 17개 / 계열: 2개
-독립항 단어 수: 186 → 문구가 길어 권리 범위 일부 제한 우려</div>
-    </div>
+    <div id="tab-market" class="tab-content active"><div class="eval-text" style="color:var(--text);">이 기술이 속한 바이오 분야는 최근 몇 년간 M&amp;A 시장에서 성장률이 낮고, 회복세도 뚜렷하지는 않습니다. 다만, 전체 인수 비중이 높아 기술이나 시장을 빠르게 확보하려는 전략적 인수는 활발하게 이루어지고 있습니다. 국경 간 거래 비중이 35% 수준으로 글로벌 확장성은 있으나, 한국 기준으로는 기술 및 자본의 유출이 더 많은 구조입니다. 해당 특허는 첨단 바이오기술(High-Tech)로 분류되어 기술적 파급력은 인정받을 수 있습니다. 종합적으로 볼 때, 시장의 성장성은 제한적이지만 전략적 인수와 기술적 매력도는 중간 수준으로 평가됩니다.</div><div class="reason-block">최근 성장률 (recent_growth) : (0.008) -&gt; (최근 성장률이 매우 낮아 단기적 성장성은 제한적임을 시사함.)
+회복 비율 (recovery_ratio) : (1.065) -&gt; (과거 저점 대비 회복세가 있으나, 큰 폭의 반등은 아님.)
+최근 추세 기울기 (recent_trend_slope) : (12.0) -&gt; (연간 추세 기울기가 양수로, 완만하나마 상승 흐름이 있음을 의미함.)
+분야 M&amp;A 동향 종합 점수 (final_score) : (0.43) -&gt; (성장성과 회복성을 종합한 점수가 중간 이하로, 시장 매력도가 높지 않음을 시사함.)
+최근 연도 M&amp;A 건수 및 내부 인수 비중 : (2024년: A=386, B_ratio=0.181 / 2025년: A=341, B_ratio=0.147) -&gt; (최근 2년간 M&amp;A 건수는 유지되고 있으나, 동종 산업 내부 인수 비중은 낮은 편임.)
+국경 간 거래 비중 및 방향성 : (cross_border_ratio=0.358, direction=outbound) -&gt; (국경 간 거래 비중이 35.8%로 개방성은 있으나, 한국에서의 기술·자본 유출이 더 많음.)
+인수 전략 유형별 건수 : (stake_single_target_cnt=567, stake_multi_target_cnt=112, full_acquisition_cnt=1435) -&gt; (전체 인수(Full Acquisition)가 다수를 차지해 시장·기술 확보 목적의 인수가 활발함.)
+High-Tech 해당 여부 : (matched_hightech: [&quot;Other Biotechnology&quot;], is_hightech: 1) -&gt; (해당 특허는 &#x27;Other Biotechnology&#x27;에 해당하는 High-Tech 기술로 분류됨.)</div></div>
+    <div id="tab-tech" class="tab-content"><div class="eval-text" style="color:var(--text);">본 특허는 콩 유래 PsaC 단백질을 코딩하는 유전자를 이용해 식물체의 콩 모자이크 바이러스 저항성을 조절하는 기술로, 청구항에서 구체적인 아미노산 서열과 이를 포함한 벡터, 형질전환 방법, 조성물까지 상세히 제시하고 있습니다. 각 청구항은 벡터의 구성, 형질전환 및 재분화 과정, 그리고 조성물의 용도까지 단계별로 구체적으로 기술되어 있어 기술적 완성도가 높아 보입니다. 특히 동일 분야에서 흔히 사용되는 병 저항성 유전자와 달리, PsaC 단백질을 활용한 점이 차별화 포인트로 읽히며, 기존 선행기술 대비 새로운 접근임을 시사합니다. 인용문헌 수가 매우 적어, 선행기술에 대한 부담이 낮고 신규성·진보성 측면에서 유리한 위치에 있습니다. 기술 설명은 용어의 일관성과 논리적 전개가 명확하게 유지되어 신뢰도가 높게 느껴집니다. 다만, IPC 코드 수가 평균보다 다소 적어 적용 분야의 확장성은 제한적일 수 있으나, 특정 응용 분야에 집중된 강점으로도 해석될 수 있습니다. 전반적으로 구체성, 차별성, 권리범위 측면에서 높은 기술성을 갖춘 특허로 평가됩니다.</div><div class="reason-block">IPC 코드 개수 : (IPC 개수: 3, 산업 평균: 4.15) -&gt; (IPC 코드가 평균보다 다소 적어 적용 범위의 폭은 제한적일 수 있으나, 특정 기술 분야에 집중된 특성으로 해석될 수 있음.)
+인용문헌 수 : (인용문헌 수: 2, 산업 평균: 10) -&gt; (인용문헌 수가 매우 적어 신규성과 진보성 측면에서 선행기술 부담이 낮게 평가됨.)
+독립항·청구 구조 : (독립항 3개(청구항 1, 3, 7), 각 항은 벡터, 제조방법, 조성물로 구성) -&gt; (청구항이 벡터, 제조방법, 조성물로 다양하게 분포되어 있어 기술적 완성도가 높고, 권리 범위도 넓게 확보된 것으로 보임.)</div></div>
+    <div id="tab-rights" class="tab-content"><div class="eval-text" style="color:var(--text);">청구항 구조는 독립항과 계열이 적절히 분산되어 있어, 권리 범위의 다각적 확보를 의도한 설계로 보입니다. 전체 청구항 수는 평균 수준으로, 기본적인 권리망은 갖추고 있습니다. 다만, 독립항의 문구가 상당히 길고 구체적이어서, 권리 범위가 명확해지는 반면 경쟁사 입장에서 회피 설계가 가능할 여지도 있습니다. 청구항 유형이 방법 및 조성물로만 구성되어 있어, 시스템이나 장치 등 다른 유형의 권리 확보에는 한계가 있습니다. 독립항에 특정 아미노산 서열 및 유전자 정보가 반복적으로 언급되어, 신규성·진보성에는 유리하나 권리 범위가 자연스럽게 좁아질 수 있습니다. 실무적으로는 명확한 적용 대상을 확보하였으나, 범위 확장성이나 유연성 측면에서는 다소 아쉬움이 남습니다. 전반적으로 권리 설계가 안정적이지만, 폭넓은 보호에는 제한이 있어 보입니다.</div><div class="reason-block">전체 청구항 수 : (7) -&gt; (전체 청구항 수가 평균에 부합하여 권리 설계의 기본적인 충실성을 보여줍니다.)
+독립항·종속항·계열 : (독립항 3, 종속항 4, 계열 2) -&gt; (독립항과 계열이 다수로 구성되어 다양한 측면에서 권리 범위를 확보하려는 시도가 엿보입니다.)
+독립항 분량(단어 수) : (108) -&gt; (독립항의 문구가 다소 긴 편으로, 권리 범위가 구체화되어 있으나 그만큼 회피 가능성도 존재할 수 있습니다.)</div></div>
   </div>
 
-  <!-- M&A PATTERNS -->
-  <div class="card">
-    <div class="card-title">M&A 인수 패턴 분석 · <span style="font-weight:400;color:var(--text-muted);">Computer Storage Device Manufacturing (334112)</span></div>
-    <div id="pattern-list">
-      <div class="pattern-item">
-        <span class="pattern-name">334112 · Computer Storage Device Mfg</span>
-        <span class="pattern-label label-수평확장">수평확장</span>
-        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="21.1" style="background:var(--blue);"></div></div>
-        <span class="pattern-percent">21.1%</span>
-      </div>
-      <div class="pattern-item">
-        <span class="pattern-name">523910 · Miscellaneous Intermediation</span>
-        <span class="pattern-label label-금융지원">금융지원</span>
-        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="15.5" style="background:var(--yellow);"></div></div>
-        <span class="pattern-percent">15.5%</span>
-      </div>
-      <div class="pattern-item">
-        <span class="pattern-name">541512 · Computer Systems Design</span>
-        <span class="pattern-label label-기술흡수">기술흡수</span>
-        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="8.5" style="background:var(--green);"></div></div>
-        <span class="pattern-percent">8.5%</span>
-      </div>
-      <div class="pattern-item">
-        <span class="pattern-name">334413 · Semiconductor Device Mfg</span>
-        <span class="pattern-label label-수직통합">수직통합</span>
-        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="8.5" style="background:var(--purple);"></div></div>
-        <span class="pattern-percent">8.5%</span>
-      </div>
-      <div class="pattern-item">
-        <span class="pattern-name">523999 · Misc Financial Investment</span>
-        <span class="pattern-label label-다각화">다각화</span>
-        <div class="pattern-bar-bg"><div class="pattern-bar-fill" data-pct="4.2" style="background:var(--cyan);"></div></div>
-        <span class="pattern-percent">4.2%</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- SIMILAR PATENTS -->
   <div class="two-col">
-    <div class="card">
-      <div class="card-title">유사 특허 — 피인수 기업</div>
-      <div class="sim-list">
-        <div class="sim-card">
-          <div class="sim-rank">#1</div>
-          <div class="sim-body">
-            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
-            <div class="sim-assignee">Netlist Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.85" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">63.9%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#2</div>
-          <div class="sim-body">
-            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
-            <div class="sim-assignee">Netlist Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.77" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">63.8%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#3</div>
-          <div class="sim-body">
-            <div class="sim-title">Hybrid memory system with configurable error thresholds</div>
-            <div class="sim-assignee">Netlist Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="63.77" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">63.8%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#4</div>
-          <div class="sim-body">
-            <div class="sim-title">NAND 플래시 메모리를 위한 결함 관리 정책들</div>
-            <div class="sim-assignee">Intel Corp</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="62.39" style="background:var(--yellow);"></div></div>
-              <span class="sim-score-val mid">62.4%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#5</div>
-          <div class="sim-body">
-            <div class="sim-title">Method and Apparatus for Selective Erase of NVM</div>
-            <div class="sim-assignee">Hewlett Packard Enterprise</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="59.02" style="background:var(--yellow);"></div></div>
-              <span class="sim-score-val mid">59.0%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">유사 특허 — 인수 기업</div>
-      <div class="sim-list">
-        <div class="sim-card">
-          <div class="sim-rank">#1</div>
-          <div class="sim-body">
-            <div class="sim-title">Defective memory unit screening in a memory system</div>
-            <div class="sim-assignee">Micron Technology Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="69.21" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">69.2%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#2</div>
-          <div class="sim-body">
-            <div class="sim-title">Defective memory unit screening in a memory system</div>
-            <div class="sim-assignee">Micron Technology Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="69.21" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">69.2%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#3</div>
-          <div class="sim-body">
-            <div class="sim-title">End of life performance throttling to prevent data loss</div>
-            <div class="sim-assignee">Micron Technology Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.29" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">64.3%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#4</div>
-          <div class="sim-body">
-            <div class="sim-title">End of life performance throttling to prevent data loss</div>
-            <div class="sim-assignee">Micron Technology Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.28" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">64.3%</span>
-            </div>
-          </div>
-        </div>
-        <div class="sim-card">
-          <div class="sim-rank">#5</div>
-          <div class="sim-body">
-            <div class="sim-title">End of life performance throttling to prevent data loss</div>
-            <div class="sim-assignee">Micron Technology Inc</div>
-            <div class="sim-score-row">
-              <div class="sim-score-bar-bg"><div class="sim-score-bar" data-pct="64.27" style="background:var(--green);"></div></div>
-              <span class="sim-score-val high">64.3%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="card"><div class="card-title">유사 기업 추천 — 피인수 기업 (Target)</div><div class="company-list"><div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">1</div><div class="company-info"><div class="company-name">Resurrect Bio</div><div class="company-meta"><span>유사도: <span class="val">58.18%</span></span><span>매칭 특허: <span class="val">1</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">식물에서 면역 기능을 조절하는 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">C07K 14/415</span></div><div class="patent-item-meta">출원번호: 1020257022599 · 출원일: 20231205 · 유사도: 58.18%</div><div class="patent-item-abstract">본 발명은 하나 이상의 NLR 단백질, 예컨대 헬퍼 NLR 단백질인 NRC2 및/또는 NRC3에 하나 이상의 돌연변이를 포함하는 유전자 변경된 식물, 그의 일부 및 식물 세포뿐만 아니라, 하나 이상의 NLR 유전자에 하나 이상의 돌연변이를 도입함으로써 식물에 병원체 또는 해충에 대한 면역을 제공하거나 또는 이를 개선하는 방법에 관한 것이다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">2</div><div class="company-info"><div class="company-name">TAS Corp</div><div class="company-meta"><span>유사도: <span class="val">55.27%</span></span><span>매칭 특허: <span class="val">1</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">신규 노균병 저항성 유전자를 갖는 시금치 식물</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">A01H 6/02</span><span class="ipc-tag">A01H 1/00</span><span class="ipc-tag">A01H 5/10</span><span class="ipc-tag">A01H 5/12</span><span class="ipc-tag">A01H 1/02</span><span class="ipc-tag">C12Q 1/686</span><span class="ipc-tag">C12Q 1/6869</span></div><div class="patent-item-meta">출원번호: 1020247013312 · 출원일: 20221101 · 유사도: 55.27%</div><div class="patent-item-abstract">본 발명은 광범위한 레이스에 저항성을 갖는 시금치 식물 및 그 시금치 식물을 제조하는 방법 등을 제공한다. 본 발명은 적어도 한쪽의 대립유전자에서 노균병 저항성 RPF-SK1 유전자를 가지고 있고, 상기 RPF-SK1 유전자는 (a) chr3_1215815로 특정되는 SNP가 시토신이거나, (b) chr3_1215855로 특정되는 SNP가 티민이거나, (c) chr3_1216014로 특정되는 SNP가 시토신이거나, (d) chr3_1216093으로 특정되는 SNP가 구아닌이고, chr3_1216094로 특정되는 SNP가 구아닌이며, 또한 chr3_1216095로 특정되는 SNP가 아데닌이거나, (e) chr3_1216288로 특정되는 SNP가 아데닌이거나, 또는 (f) chr3_1216291로 특정되는 SNP가 구아닌인, 노균병 저항성 시금치 식물이다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">3</div><div class="company-info"><div class="company-name">Beijing Dabeinong Biotech Co</div><div class="company-meta"><span>유사도: <span class="val">54.53%</span></span><span>매칭 특허: <span class="val">2</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">돌연변이된 하이드록시페닐피루베이트 다이옥시저네이즈 폴리펩타이드, 및 코딩 유전자와 이의 용도</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/02</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01G 13/00</span><span class="ipc-tag">A01G 7/06</span><span class="ipc-tag">A01G 22/00</span></div><div class="patent-item-meta">출원번호: 1020247023769 · 출원일: 20211215 · 유사도: 55.00%</div><div class="patent-item-abstract">본 발명은 돌연변이된 하이드록시페닐피루베이트 다이옥시저네이즈(hydroxyphenylpyruvate dioxygenase, HPPD) 폴리펩타이드, 코딩 유전자 및 이의 용도에 관한 것이다. 돌연변이된 HPPD 폴리펩타이드는 4-하이드록시페닐피루브산의 호모젠티신산 또는 호모젠티세이트로의 전환을 촉매하는 활성을 유지하며 야생형 HPPD보다 HPPD-억제제 제초제에 대한 민감도가 낮다. 서열번호 1의 아미노산 서열에 상응하는 아미노산 서열은 다음의 부위에서 아미노산 돌연변이를 포함한다: F372 부위가 A, G 또는 V로 치환되고, F383 부위가 W로 치환됨. 본 발명은 서로 다른 종 공급원으로부터의 HPPD 폴리펩타이드의 372번 및 383번 위치에서의 조합 돌연변이가 식물에 HPPD-억제제 제초제에 대한 시너지적인 내성을 부여할 수 있고, 식물에서의 적용 전망이 넓다는 것을 처음으로 개시한다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">제초제 내성 단백질, 그 코딩 유전자 및 용도</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">C12N 9/02</span></div><div class="patent-item-meta">출원번호: 1020177025455 · 출원일: 20160202 · 유사도: 54.06%</div><div class="patent-item-abstract">본 발명은 제초제 내성 단백질, 그 코딩 유전자 및 용도를 제공한다. 제초제 내성 단백질은 (a) 서열번호 2로 표시되는 아미노산 서열로 구성되는 단백질, 또는 (b) (a)중의 아미노산 서열에 있어서 하나 또는 다수의 아미노산이 치환 및/또는 결실 및/또는 부가되었고 제초제 내성 활성을 구비하며 (a)로부터 유도된 단백질을 포함한다. 이 제초제 내성 단백질은 페녹시 식물 생장소 제초제에 특별히 우수한 내성을 가진다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">4</div><div class="company-info"><div class="company-name">ITE</div><div class="company-meta"><span>유사도: <span class="val">53.88%</span></span><span>매칭 특허: <span class="val">2</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">개선된 선충 저항성을 갖는 식물</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/10</span><span class="ipc-tag">A01H 5/10</span><span class="ipc-tag">C12Q 1/6895</span><span class="ipc-tag">A01H 6/82</span><span class="ipc-tag">A01H 6/34</span><span class="ipc-tag">A01H 6/54</span></div><div class="patent-item-meta">출원번호: 1020227037649 · 출원일: 20210329 · 유사도: 56.06%</div><div class="patent-item-abstract">본 발명은 선충에 대한 개선된 저항성을 나타내는 신규한 식물에 관한 것이다. 본 발명은 또한 상기 식물의 종자 및 부분에 관한 것이다. 본 발명은 추가로 이러한 종자 및 식물을 제조하고 사용하는 방법에 관한 것이다. 본 발명은 또한 선충에 대한 이러한 개선된 저항성과 관련된 변형된 SmD1 단백질을 생성하는 신규한 SmD1 대립유전자에 관한 것이다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">니코티아나 타바쿰에서 니코틴 수준을 조절하는 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">A01H 5/12</span><span class="ipc-tag">A01H 6/82</span><span class="ipc-tag">A24B 15/10</span><span class="ipc-tag">A24B 15/167</span></div><div class="patent-item-meta">출원번호: 1020227038987 · 출원일: 20210409 · 유사도: 51.70%</div><div class="patent-item-abstract">본 발명은 식물(예를 들어, 담배 식물) 또는 이의 일부, 또는 담배 식물 세포의 니코틴 함량을 조절하는(예를 들어, 감소시키는) 방법을 제공하며, 상기 방법은 상기 식물 또는 세포를 변형시켜 Nic3 유전자좌에서 적어도 하나의 돌연변이를 제공하는 것을 포함한다. 본 발명은 식물(예를 들어, 담배 식물) 또는 이의 일부, 또는 담배 식물 세포의 니코틴 함량을 조절하는(예를 들어, 감소시키는) 방법을 제공하며, 상기 방법은 적어도 하나의 Nic3 유전자의 발현 또는 활성을 조절하도록 상기 식물 또는 세포를 변형시키는 것을 포함한다. 본 발명은 또한 본 발명에 따라 수득 가능한 식물뿐만 아니라 담배 세포, 식물, 식물 번식 물질, 수확된 잎, 가공된 담배, 또는 전달 시스템의 알칼로이드 함량을 조절하기 위한 Nic3 유전자좌의 용도를 제공한다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">5</div><div class="company-info"><div class="company-name">Benson Hill Inc</div><div class="company-meta"><span>유사도: <span class="val">51.10%</span></span><span>매칭 특허: <span class="val">1</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">Increasing plant growth and yield by using a PSAN sequence</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">US</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N15/82</span><span class="ipc-tag">C07K14/415</span></div><div class="patent-item-meta">출원번호: 16311389 · 출원일: 20170614 · 유사도: 51.10%</div><div class="patent-item-abstract"> Compositions and methods for improving plant growth are provided herein. Polynucleotides encoding photosystem I reaction center subunit N (PSAN) proteins, polypeptides encompassing PSAN proteins, and expression constructs for expressing genes of interest whose expression may improve agronomic properties including but not limited to crop yield, biotic and abiotic stress tolerance, and early vigor, plants comprising the polynucleotides, polypeptides, and expression constructs, and methods of producing transgenic plants are also provided.</div></div></div></div></div></div></div>
+    <div class="card"><div class="card-title">유사 기업 추천 — 인수 기업 (Acquiror)</div><div class="company-list"><div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">1</div><div class="company-info"><div class="company-name">LGC Ltd</div><div class="company-meta"><span>유사도: <span class="val">57.49%</span></span><span>매칭 특허: <span class="val">10</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127373 · 출원일: 20200929 · 유사도: 61.66%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127376 · 출원일: 20200929 · 유사도: 61.65%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127377 · 출원일: 20200929 · 유사도: 61.58%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">2</div><div class="company-info"><div class="company-name">LG Chem Ltd</div><div class="company-meta"><span>유사도: <span class="val">56.54%</span></span><span>매칭 특허: <span class="val">11</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127373 · 출원일: 20200929 · 유사도: 61.58%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127374 · 출원일: 20200929 · 유사도: 61.57%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">콩의 글라이포세이트 저항성을 증진 및/또는 부여하기 위한 조성물 및 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 9/10</span><span class="ipc-tag">C07K 14/415</span><span class="ipc-tag">C12N 15/82</span><span class="ipc-tag">A01N 63/50</span><span class="ipc-tag">A01H 1/06</span></div><div class="patent-item-meta">출원번호: 1020200127375 · 출원일: 20200929 · 유사도: 61.57%</div><div class="patent-item-abstract">식물의 제초제 저항성 증진 기술과 관련된 것으로, 보다 구체적으로, 콩의 5-에놀-피루빌시키메이트-3-포스페이트 신타아제 (5-enol-pyruvylshikimate-3-phosphate synthase; EPSPS) 암호화 유전자에 돌연변이를 도입하여, 콩의 글라이포세이트 (glyphosate)에 대한 저항성을 증진 및/또는 부여하는 기술이 제공된다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">3</div><div class="company-info"><div class="company-name">Thermo Fisher Scientific Inc</div><div class="company-meta"><span>유사도: <span class="val">56.06%</span></span><span>매칭 특허: <span class="val">1</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">바이러스 제조를 위한 세포주 및 이의 사용 방법</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">KR</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N 15/63</span><span class="ipc-tag">C12N 7/00</span><span class="ipc-tag">C12N 15/11</span></div><div class="patent-item-meta">출원번호: 1020157020862 · 출원일: 20140205 · 유사도: 56.06%</div><div class="patent-item-abstract">본 발명은 조작된(engineered) 세포주를 제공한다. 일부 구현예에서, 조작된 세포주의 세포는 유전자의 발현 변형 및/또는 miRNA의 발현 변형을 가지며, 변형된 발현으로 인해 바이러스의 제조가 증가 또는 감소된다. 바이러스는 폴리오바이러스(poliovirus) 또는 장내바이러스 71(enterovirus 71)과 같은 피코나바이러스(picornavirus)이다. 본 발명은 또한, 바이러스를 제조하기 위해 조작된 세포를 사용하는 방법, 및 바이러스에 감염되어 있거나 또는 바이러스에 감염될 위험이 있는 개체를 치료하는 방법을 제공한다.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">4</div><div class="company-info"><div class="company-name">Intervet Inc</div><div class="company-meta"><span>유사도: <span class="val">48.17%</span></span><span>매칭 특허: <span class="val">1</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">Pestivirus species</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">US</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12Q1/70</span><span class="ipc-tag">A61K39/12</span><span class="ipc-tag">C07K14/005</span><span class="ipc-tag">C12N7/00</span><span class="ipc-tag">G01N33/569</span><span class="ipc-tag">A61K39/00</span></div><div class="patent-item-meta">출원번호: 15132436 · 출원일: 20160419 · 유사도: 48.17%</div><div class="patent-item-abstract"> The application relates to a pestivirus, designated PMC virus, that is associated with porcine myocarditis syndrome, and the gene and protein sequences derived therefrom. The application further relates to detection methods, vaccine therapeutics, and diagnostic methods using the PMC virus or gene/protein sequences derived therefrom.</div></div></div></div></div>
+<div class="company-card" onclick="toggleCompany(event, this)"><div class="company-header"><div class="company-rank">5</div><div class="company-info"><div class="company-name">Ceres Inc</div><div class="company-meta"><span>유사도: <span class="val">46.78%</span></span><span>매칭 특허: <span class="val">10</span></span></div></div><div class="company-chevron">▼</div></div><div class="company-patents"><div class="company-patents-inner"><div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">Nucleotide sequences and corresponding polypeptides conferring modulated growth rate and biomass in plants grown in saline and oxidative conditions</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">US</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N15/82</span><span class="ipc-tag">C07K14/415</span></div><div class="patent-item-meta">출원번호: 16750667 · 출원일: 20200123 · 유사도: 46.78%</div><div class="patent-item-abstract"> The present invention relates to isolated nucleic acid molecules and their corresponding encoded polypeptides able confer the trait of improved plant size, vegetative growth, growth rate, seedling vigor and/or biomass in plants challenged with saline and/or oxidative stress conditions. The present invention further relates to the use of these nucleic acid molecules and polypeptides in making transgenic plants, plant cells, plant materials or seeds of a plant having plant size, vegetative growth, growth rate, seedling vigor and/or biomass that are improved in saline and/or oxidative stress conditions with respect to wild-type plants grown under similar conditions.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">Nucleotide sequences and corresponding polypeptides conferring modulated growth rate and biomass in plants grown in saline and oxidative conditions</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">US</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N15/82</span><span class="ipc-tag">C07K14/415</span></div><div class="patent-item-meta">출원번호: 17220681 · 출원일: 20210401 · 유사도: 46.78%</div><div class="patent-item-abstract"> The present invention relates to isolated nucleic acid molecules and their corresponding encoded polypeptides able confer the trait of improved plant size, vegetative growth, growth rate, seedling vigor and/or biomass in plants challenged with saline and/or oxidative stress conditions. The present invention further relates to the use of these nucleic acid molecules and polypeptides in making transgenic plants, plant cells, plant materials or seeds of a plant having plant size, vegetative growth, growth rate, seedling vigor and/or biomass that are improved in saline and/or oxidative stress conditions with respect to wild-type plants grown under similar conditions.</div></div>
+<div class="patent-item" onclick="togglePatent(event, this)"><div class="patent-item-head"><div class="patent-item-title-wrap"><span class="patent-item-title-text">Nucleotide sequences and corresponding polypeptides conferring modulated growth rate and biomass in plants grown in saline and oxidative conditions</span><span class="patent-item-chevron">▼</span></div><span class="country-pill">US</span></div><div class="patent-item-ipc"><span class="ipc-tag">C12N15/82</span><span class="ipc-tag">C07K14/415</span></div><div class="patent-item-meta">출원번호: 17063395 · 출원일: 20201005 · 유사도: 46.78%</div><div class="patent-item-abstract"> The present invention relates to isolated nucleic acid molecules and their corresponding encoded polypeptides able confer the trait of improved plant size, vegetative growth, growth rate, seedling vigor and/or biomass in plants challenged with saline and/or oxidative stress conditions. The present invention further relates to the use of these nucleic acid molecules and polypeptides in making transgenic plants, plant cells, plant materials or seeds of a plant having plant size, vegetative growth, growth rate, seedling vigor and/or biomass that are improved in saline and/or oxidative stress conditions with respect to wild-type plants grown under similar conditions.</div></div></div></div></div></div></div>
   </div>
 
+  <div class="card"><div class="card-title">M&A 패턴</div><div class="pattern-list"><div class="pattern-item"><div><strong>541714</strong> · Research and Development in Biotechnology (except Nanobiotechnology)</div><div class="pattern-meta">비중 15.3% · 수평확장 · 같은 분야의 연구 개발을 강화합니다.</div><div class="pattern-reason">같은 산업 내에서 인수합병이 이루어지면, 연구 개발(새로운 기술이나 제품을 만드는 과정)에서의 시너지를 기대할 수 있습니다. 두 회사가 함께 협력하면 더 많은 자원과 인력을 활용해 혁신을 이루고, 시장에서의 경쟁력을 높일 수 있습니다.</div></div>
+<div class="pattern-item"><div><strong>325412</strong> · Pharmaceutical Preparation Manufacturing</div><div class="pattern-meta">비중 14.1% · 기술흡수 · 신약 개발에 필요한 기술을 확보합니다.</div><div class="pattern-reason">제약 회사가 바이오 기술 회사를 인수하면, 신약 개발에 필요한 최신 기술과 연구 결과를 쉽게 얻을 수 있습니다. 이를 통해 제품의 품질을 높이고, 시장에서의 경쟁력을 강화할 수 있습니다.</div></div>
+<div class="pattern-item"><div><strong>325414</strong> · Biological Product (except Diagnostic) Manufacturing</div><div class="pattern-meta">비중 7.1% · 기술흡수 · 생물학적 제품 개발에 도움을 줍니다.</div><div class="pattern-reason">생물학적 제품을 만드는 회사가 바이오 연구 회사를 인수하면, 새로운 제품 개발에 필요한 연구 결과와 기술을 확보할 수 있습니다. 이는 제품의 다양성을 높이고, 고객의 요구에 더 잘 맞출 수 있게 도와줍니다.</div></div>
+<div class="pattern-item"><div><strong>523910</strong> · Miscellaneous Intermediation</div><div class="pattern-meta">비중 5.4% · 금융지원 · 연구 개발에 필요한 자금을 지원합니다.</div><div class="pattern-reason">금융 중개업체가 바이오 연구 회사를 인수하면, 연구 개발에 필요한 자금을 보다 쉽게 지원할 수 있습니다. 이는 연구의 지속성을 높이고, 혁신적인 제품을 시장에 빠르게 출시하는 데 기여할 수 있습니다.</div></div>
+<div class="pattern-item"><div><strong>525990</strong> · Other Financial Vehicles</div><div class="pattern-meta">비중 4.8% · 금융지원 · 바이오 연구에 투자합니다.</div><div class="pattern-reason">기타 금융 차량이 바이오 연구 회사를 인수하면, 연구 개발에 필요한 자본을 투자할 수 있습니다. 이는 연구의 발전을 촉진하고, 새로운 기술이나 제품을 시장에 내놓는 데 도움을 줄 수 있습니다.</div></div></div></div>
 </main>
 
 <script>
-  // 탭 전환
-  function switchTab(btn, id) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(id).classList.add('active');
-  }
+function switchTab(event, tabId) {
+  event.preventDefault();
+  const buttons = document.querySelectorAll('.tab-btn');
+  const contents = document.querySelectorAll('.tab-content');
+  buttons.forEach(btn => btn.classList.remove('active'));
+  contents.forEach(content => content.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
 
-  // 숫자 카운트업 + 바 애니메이션
-  function animateCounters() {
-    document.querySelectorAll('.score-number[data-target]').forEach(el => {
-      el.classList.add('visible');
-      const target = parseInt(el.dataset.target);
-      const duration = 1200;
-      const start = performance.now();
-      function update(now) {
-        const p = Math.min((now - start) / duration, 1);
-        const ease = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(ease * target);
-        if (p < 1) requestAnimationFrame(update);
-      }
-      requestAnimationFrame(update);
-    });
-    document.querySelectorAll('.score-bar[data-pct]').forEach(el => {
-      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 100);
-    });
-    document.querySelectorAll('.pattern-bar-fill[data-pct]').forEach(el => {
-      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 300);
-    });
-    document.querySelectorAll('.sim-score-bar[data-pct]').forEach(el => {
-      setTimeout(() => { el.style.width = el.dataset.pct + '%'; }, 500);
-    });
+function toggleCompany(event, element) {
+  if (event) {
+    event.stopPropagation();
   }
+  element.classList.toggle('open');
+}
 
-  // IntersectionObserver로 카드가 화면에 들어올 때 애니메이션 트리거
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { animateCounters(); observer.disconnect(); } });
-  }, { threshold: 0.2 });
-  observer.observe(document.querySelector('.score-grid'));
+function togglePatent(event, element) {
+  if (event) {
+    event.stopPropagation();
+  }
+  element.classList.toggle('open');
+}
+
+function initEntryAnimations() {
+  const sections = document.querySelectorAll('main > .card, main > .two-col');
+  sections.forEach((section, idx) => {
+    section.classList.add('reveal-item');
+    section.style.animationDelay = `${120 + idx * 80}ms`;
+  });
+}
+
+initEntryAnimations();
 </script>
+
 </body>
 </html>

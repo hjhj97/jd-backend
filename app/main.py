@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from loguru import logger
 
@@ -20,6 +21,14 @@ app = FastAPI(
     title="Patent PDF Analyzer",
     description="특허 공보 PDF를 분석하여 보고서를 생성하는 API",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -156,4 +165,3 @@ _STATIC_DIR = Path(__file__).parent / "static"
 @app.get("/sample")
 async def sample_report():
     return FileResponse(_STATIC_DIR / "sample.html", media_type="text/html")
-
