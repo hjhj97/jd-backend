@@ -5,6 +5,7 @@ from loguru import logger
 
 from app.config import settings
 from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
+from app.services.patent_type_service import detect_patent_type
 from app.services.pdf_service import parse_pdf_via_runpod
 from app.services.s3_service import delete_pdf
 from app.worker.celery_app import celery_app
@@ -89,6 +90,13 @@ def _run_pipeline(
     logger.info(f"[OCR_RAW_TEXT_LENGTH] chars={text_length}")
     logger.info(f"PDF 파싱 완료 - {text_length} chars")
 
+    # --- Step 1.5: 특허 타입 감지 ---
+    patent_type_info = detect_patent_type(text)
+    logger.info(
+        f"[PATENT_TYPE] type={patent_type_info['patent_type']}, "
+        f"kind_code={patent_type_info['patent_kind_code']}"
+    )
+
     # --- Step 2: JDPatent 작업 등록 ---
     task.update_state(state="JDPATENT_SUBMIT", meta={"msg": "JDPatent 작업 등록 중"})
     logger.info("Step 2/3 - JDPatent 작업 등록")
@@ -96,6 +104,8 @@ def _run_pipeline(
         task_id=task.request.id,
         raw_text=text,
         user_id=original_filename or task.request.id,
+        patent_type=patent_type_info["patent_type"],
+        patent_kind_code=patent_type_info["patent_kind_code"],
     )
 
     # --- Step 3: JDPatent 결과 대기 ---
@@ -103,4 +113,15 @@ def _run_pipeline(
     logger.info("Step 3/3 - JDPatent 결과 polling")
     result = poll_jdpatent_result(task.request.id)
     logger.info("JDPatent 결과 수신 완료")
+
+    # --- Step 4: 특허 타입 정보 주입 ---
+    if isinstance(result, dict):
+        basic_info = result.get("basic_info")
+        if isinstance(basic_info, dict):
+            basic_info["patent_type"] = patent_type_info["patent_type"]
+            basic_info["patent_kind_code"] = patent_type_info["patent_kind_code"]
+        else:
+            result["patent_type"] = patent_type_info["patent_type"]
+            result["patent_kind_code"] = patent_type_info["patent_kind_code"]
+
     return result

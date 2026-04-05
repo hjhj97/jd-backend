@@ -17,6 +17,8 @@ def submit_jdpatent_job(
     user_prefer: str = "nation",
     user_prefer_nation: str | None = "South Korea",
     user_prefer_area: str | None = None,
+    patent_type: str | None = None,
+    patent_kind_code: str | None = None,
 ) -> None:
     url = f"{settings.JDPATENT_API_URL}/api/v1/jobs"
     payload = {
@@ -26,6 +28,8 @@ def submit_jdpatent_job(
         "user_prefer": user_prefer,
         "user_prefer_nation": user_prefer_nation,
         "user_prefer_area": user_prefer_area,
+        "patent_type": patent_type,
+        "patent_kind_code": patent_kind_code,
     }
     with httpx.Client(timeout=settings.JDPATENT_SUBMIT_TIMEOUT_SECONDS) as client:
         response = client.post(url, json=payload)
