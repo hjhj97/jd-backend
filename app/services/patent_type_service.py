@@ -8,6 +8,108 @@ import re
 _PUBLIC_KIND_CODES = {"A", "A1", "A2", "A9"}
 _REGISTRATION_KIND_CODES = {"B1", "B2"}
 _OTHER_KIND_CODES = {"U", "Y1", "S", "S1", "P1", "P2", "P3", "E1"}
+_KNOWN_KIND_CODES = {
+    "A",
+    "A1",
+    "A2",
+    "A9",
+    "B1",
+    "B2",
+    "U",
+    "Y1",
+    "S",
+    "S1",
+    "P1",
+    "P2",
+    "P3",
+    "E1",
+}
+_PRIMARY_SCAN_CHARS = 30000
+
+
+def _extract_us_patent_number_and_kind(text: str) -> tuple[str | None, str | None]:
+    """미국 특허번호 + Kind code를 함께 추출한다.
+
+    반환 번호는 country code를 제외한 본문 번호(예: 12,104,151)를 사용한다.
+    """
+    if not text:
+        return None, None
+
+    # (11)/(45)와 인접한 grant 표기를 우선 매칭해 신뢰도를 높입니다.
+    patterns = [
+        re.compile(
+            r"""
+            (?:
+                \(\s*11\s*\)\s*(?:patent\s*no\.?\s*[:\-]?\s*)?(?:US\s*)?
+                (?P<number>\d{1,2}(?:,\d{3}){1,4}|RE\s*\d{1,2}(?:,\d{3}){1,4})
+                [\s,;:.-]*
+                (?P<kind>[A-Z]\d{0,2})
+            )
+            """,
+            re.VERBOSE | re.IGNORECASE,
+        ),
+        re.compile(
+            r"""
+            (?:
+                US\s*
+                (?P<number>\d{1,2}(?:,\d{3}){1,4}|RE\s*\d{1,2}(?:,\d{3}){1,4})
+                [\s,;:.-]*
+                (?P<kind>[A-Z]\d{0,2})
+                [\s,;:.-]*
+                (?:\(\s*45\s*\)|Date\s+of\s+Patent)
+            )
+            """,
+            re.VERBOSE | re.IGNORECASE,
+        ),
+        re.compile(
+            r"""
+            (?:
+                US\s*
+                (?P<number>\d{1,2}(?:,\d{3}){1,4}|RE\s*\d{1,2}(?:,\d{3}){1,4})
+                [\s,;:.-]*
+                (?P<kind>[A-Z]\d{0,2})
+            )
+            """,
+            re.VERBOSE | re.IGNORECASE,
+        ),
+    ]
+
+    for pattern in patterns:
+        for m in pattern.finditer(text):
+            kind = (m.group("kind") or "").upper()
+            if kind not in _KNOWN_KIND_CODES:
+                continue
+            number = (m.group("number") or "").upper().replace("  ", " ").strip()
+            if number:
+                return number, kind
+
+    return None, None
+
+
+def _build_detection_scope(ocr_text: str) -> str:
+    """특허 식별 정보가 자주 위치하는 구간을 모아 탐지 스코프를 만든다."""
+    if not ocr_text:
+        return ""
+
+    scopes = [ocr_text[:_PRIMARY_SCAN_CHARS]]
+    anchor_patterns = [
+        re.compile(r"\(\s*11\s*\)", re.IGNORECASE),
+        re.compile(r"\(\s*45\s*\)", re.IGNORECASE),
+        re.compile(r"Date\s+of\s+Patent", re.IGNORECASE),
+        re.compile(r"Patent\s*No\.?", re.IGNORECASE),
+    ]
+
+    for pattern in anchor_patterns:
+        for m in pattern.finditer(ocr_text):
+            start = max(0, m.start() - 800)
+            end = min(len(ocr_text), m.end() + 1600)
+            scopes.append(ocr_text[start:end])
+            if len(scopes) >= 12:
+                break
+        if len(scopes) >= 12:
+            break
+
+    return "\n".join(s for s in scopes if s)
 
 
 def _extract_kind_code_from_number(text: str) -> str | None:
@@ -28,8 +130,6 @@ def _extract_kind_code_from_number(text: str) -> str | None:
       WO 2023/123456 A1
       EP 1234567 B1
     """
-    _KNOWN_KIND_CODES = {"A", "A1", "A2", "A9", "B1", "B2", "U", "Y1", "S", "S1", "P1", "P2", "P3", "E1"}
-
     # 1차: INID (12) 라인에서 kind code 추출
     # 실제 OCR 예시:
     #   "(12) 등록특허공보(B1)"  → 정상
@@ -64,24 +164,24 @@ def _extract_kind_code_from_number(text: str) -> str | None:
         r"""
         (?:
             # US/EP/WO/JP/CN + 번호 + kind code
-            (?:US|EP|WO|JP|CN)\s*(?:RE\s*)?[\d,/\-]+\s+([A-Z]\d?)
+            (?:US|EP|WO|JP|CN)\s*(?:RE\s*)?[\d,/\-]+[\s,;:.-]*([A-Z]\d?)
             |
             # KR 10-YYYY-NNNNNNN A  (특허 공개)
-            10[\-\s]\d{4}[\-\s]\d{5,7}\s+([A-Z]\d?)
+            10[\-\s]\d{4}[\-\s]\d{5,7}[\s,;:.-]*([A-Z]\d?)
             |
             # KR 10-NNNNNNN B1  (특허 등록)
-            10[\-\s]\d{7}\s+([A-Z]\d?)
+            10[\-\s]\d{7}[\s,;:.-]*([A-Z]\d?)
             |
             # KR 20-YYYY-NNNNNNN U  (실용신안 공개)
-            20[\-\s]\d{4}[\-\s]\d{5,7}\s+([A-Z]\d?)
+            20[\-\s]\d{4}[\-\s]\d{5,7}[\s,;:.-]*([A-Z]\d?)
             |
             # KR 20-NNNNNNN Y1  (실용신안 등록)
-            20[\-\s]\d{7}\s+([A-Z]\d?)
+            20[\-\s]\d{7}[\s,;:.-]*([A-Z]\d?)
             |
             # KR 30-YYYY-NNNNNNN S  (디자인)
-            30[\-\s]\d{4}[\-\s]\d{5,7}\s+([A-Z]\d?)
+            30[\-\s]\d{4}[\-\s]\d{5,7}[\s,;:.-]*([A-Z]\d?)
             |
-            30[\-\s]\d{7}\s+([A-Z]\d?)
+            30[\-\s]\d{7}[\s,;:.-]*([A-Z]\d?)
         )
         \b
         """,
@@ -134,16 +234,24 @@ def detect_patent_type(ocr_text: str) -> dict[str, str | None]:
         {"patent_type": "public"|"registration"|"other",
          "patent_kind_code": "A1"|"B2"|"U"|"Y1"|"S"|"S1"|"P1"|"E1"|... or None}
     """
-    # 첫 페이지 범위만 검사
-    header = ocr_text[:3000]
+    scope = _build_detection_scope(ocr_text)
 
     # 1) Kind code 추출 시도 (가장 신뢰도 높음)
-    kind_code = _extract_kind_code_from_number(header)
+    us_patent_number, us_kind_code = _extract_us_patent_number_and_kind(scope)
+    kind_code = us_kind_code or _extract_kind_code_from_number(scope)
 
     if kind_code:
         patent_type = _classify_patent_type(kind_code)
-        return {"patent_type": patent_type, "patent_kind_code": kind_code}
+        return {
+            "patent_type": patent_type,
+            "patent_kind_code": kind_code,
+            "patent_number": us_patent_number,
+        }
 
     # 2) 한국어 헤더 키워드 fallback
-    patent_type, fallback_kind_code = _detect_from_korean_header(header)
-    return {"patent_type": patent_type, "patent_kind_code": fallback_kind_code}
+    patent_type, fallback_kind_code = _detect_from_korean_header(scope)
+    return {
+        "patent_type": patent_type,
+        "patent_kind_code": fallback_kind_code,
+        "patent_number": us_patent_number,
+    }

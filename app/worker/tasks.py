@@ -94,7 +94,8 @@ def _run_pipeline(
     patent_type_info = detect_patent_type(text)
     logger.info(
         f"[PATENT_TYPE] type={patent_type_info['patent_type']}, "
-        f"kind_code={patent_type_info['patent_kind_code']}"
+        f"kind_code={patent_type_info['patent_kind_code']}, "
+        f"patent_number={patent_type_info.get('patent_number')}"
     )
 
     # --- Step 2: JDPatent 작업 등록 ---
