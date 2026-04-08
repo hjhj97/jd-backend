@@ -1,3 +1,4 @@
+import json
 import uuid
 from asyncio import Task, create_task, sleep
 
@@ -161,6 +162,66 @@ async def health_check():
 
 
 _STATIC_DIR = Path(__file__).parent / "static"
+_V3_RESULT_PATH = _STATIC_DIR / "output_v3.json"
+
+
+@app.get(
+    "/api/v3/result/{task_id}",
+    summary="v3 임시 결과 조회",
+    description=(
+        "임시(mock) 엔드포인트입니다. task_id 값과 무관하게 "
+        "`app/static/output_v3.json` 파일 내용을 그대로 반환합니다."
+    ),
+    responses={
+        200: {
+            "description": "output_v3.json 포맷 반환",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "task_id": "sample-task-id",
+                        "status": "completed",
+                        "result": {},
+                    }
+                }
+            },
+        },
+        404: {
+            "description": "output_v3.json 파일 없음",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "output_v3.json 파일을 찾을 수 없습니다.",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "output_v3.json 파싱 실패",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": False,
+                        "msg": "output_v3.json JSON 파싱에 실패했습니다.",
+                        "request_id": "abcd1234",
+                    }
+                }
+            },
+        },
+    },
+)
+@app.get("/api/v3/result{task_id}", include_in_schema=False)
+async def get_v3_result(task_id: str):
+    if not _V3_RESULT_PATH.exists():
+        raise HTTPException(status_code=404, detail="output_v3.json 파일을 찾을 수 없습니다.")
+
+    try:
+        return json.loads(_V3_RESULT_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=500, detail="output_v3.json JSON 파싱에 실패했습니다.") from exc
+
 
 @app.get("/sample")
 async def sample_report():
