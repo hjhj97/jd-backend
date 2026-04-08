@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from loguru import logger
 
-from app.api.routes import router
+from app.api.routes import get_result as get_v1_result, normalize_field_codes_for_api, router
 from app.config import settings
 from app.logging_config import setup_logging
 from app.services.temp_pdf_service import cleanup_expired_temp_pdfs
@@ -167,60 +167,60 @@ _V3_RESULT_PATH = _STATIC_DIR / "output_v3.json"
 
 @app.get(
     "/api/v3/result/{task_id}",
-    summary="v3 임시 결과 조회",
+    summary="v3 결과 조회",
     description=(
-        "임시(mock) 엔드포인트입니다. task_id 값과 무관하게 "
-        "`app/static/output_v3.json` 파일 내용을 그대로 반환합니다."
+        "`GET /api/v1/result/{task_id}`와 동일한 상태 조회 로직으로 동작하며, "
+        "상태가 `completed`일 때만 실제 결과 대신 `app/static/output_v3.json`을 반환합니다."
     ),
     responses={
         200: {
-            "description": "output_v3.json 포맷 반환",
+            "description": "상태 조회 결과 또는 completed 시 output_v3.json",
             "content": {
                 "application/json": {
-                    "example": {
-                        "success": True,
-                        "task_id": "sample-task-id",
-                        "status": "completed",
-                        "result": {},
+                    "examples": {
+                        "queued": {
+                            "summary": "대기 중",
+                            "value": {
+                                "success": True,
+                                "task_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",
+                                "status": "queued",
+                            },
+                        },
+                        "completed_mock": {
+                            "summary": "완료 시 mock 결과 반환",
+                            "value": {
+                                "success": True,
+                                "task_id": "sample-task-id",
+                                "status": "completed",
+                                "result": {},
+                            },
+                        },
                     }
                 }
             },
         },
         404: {
-            "description": "output_v3.json 파일 없음",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "msg": "output_v3.json 파일을 찾을 수 없습니다.",
-                        "request_id": "abcd1234",
-                    }
-                }
-            },
+            "description": "존재하지 않는 task_id 또는 output_v3.json 파일 없음",
         },
         500: {
             "description": "output_v3.json 파싱 실패",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "success": False,
-                        "msg": "output_v3.json JSON 파싱에 실패했습니다.",
-                        "request_id": "abcd1234",
-                    }
-                }
-            },
         },
     },
 )
-@app.get("/api/v3/result{task_id}", include_in_schema=False)
 async def get_v3_result(task_id: str):
-    if not _V3_RESULT_PATH.exists():
-        raise HTTPException(status_code=404, detail="output_v3.json 파일을 찾을 수 없습니다.")
+    v1_response = await get_v1_result(task_id)
 
-    try:
-        return json.loads(_V3_RESULT_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        raise HTTPException(status_code=500, detail="output_v3.json JSON 파싱에 실패했습니다.") from exc
+    if isinstance(v1_response, dict) and v1_response.get("status") == "completed":
+        if not _V3_RESULT_PATH.exists():
+            raise HTTPException(status_code=404, detail="output_v3.json 파일을 찾을 수 없습니다.")
+
+        try:
+            mock_payload = json.loads(_V3_RESULT_PATH.read_text(encoding="utf-8"))
+            return normalize_field_codes_for_api(mock_payload)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=500, detail="output_v3.json JSON 파싱에 실패했습니다.") from exc
+
+    return v1_response
 
 
 @app.get("/sample")
