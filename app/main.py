@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from loguru import logger
 
-from app.api.routes import get_result as get_v1_result, normalize_field_codes_for_api, router
+from app.api.routes import get_result as get_v1_result, router
 from app.config import settings
 from app.logging_config import setup_logging
 from app.services.temp_pdf_service import cleanup_expired_temp_pdfs
@@ -216,7 +216,7 @@ async def get_v3_result(task_id: str):
 
         try:
             mock_payload = json.loads(_V3_RESULT_PATH.read_text(encoding="utf-8"))
-            return normalize_field_codes_for_api(mock_payload)
+            return mock_payload
         except json.JSONDecodeError as exc:
             raise HTTPException(status_code=500, detail="output_v3.json JSON 파싱에 실패했습니다.") from exc
 
