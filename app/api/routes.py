@@ -414,20 +414,9 @@ async def get_result(task_id: str):
 
     task = AsyncResult(task_id, app=celery_app)
 
-    # PENDING 상태일 때 실제로 존재하는 task인지 확인
+    # PENDING은 대기열 혼잡 상황에서 정상 task도 길게 유지될 수 있으므로
+    # 404로 판정하지 않고 queued로 응답한다.
     if task.state == "PENDING":
-        # Redis에서 task 키가 존재하는지 확인
-        # (PENDING은 존재하지 않는 task도 PENDING으로 반환됨)
-        task_key = f"celery-task-meta-{task_id}"
-        backend = celery_app.backend
-        
-        # Redis에 task 정보가 있는지 확인
-        if not backend.get(task_key):
-            raise HTTPException(
-                status_code=404,
-                detail=f"존재하지 않는 task_id입니다: {task_id}",
-            )
-        
         return {"success": True, "task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
