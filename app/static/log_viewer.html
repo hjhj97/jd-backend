@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>Log Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #111a2b;
+      --muted: #93a4bf;
+      --text: #eef4ff;
+      --ok: #1bbf83;
+      --warn: #f0b429;
+      --err: #f05252;
+      --raw: #7c8aa5;
+      --line: #23304a;
+      --accent: #3da5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 0% 0%, #15223b 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.3px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--raw);
+    }
+
+    .dot.ok {
+      background: var(--ok);
+    }
+
+    .dot.err {
+      background: var(--err);
+    }
+
+    .controls {
+      background: color-mix(in srgb, var(--panel) 86%, #000);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      align-items: center;
+    }
+
+    .controls label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    select,
+    input,
+    button {
+      width: 100%;
+      background: #0f1728;
+      color: var(--text);
+      border: 1px solid #2b3b5b;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.08s ease, border-color 0.12s ease;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .toggle-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .meta {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #0f1728;
+    }
+
+    .table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(12, 20, 34, 0.95);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    thead {
+      background: #131e33;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #1f2b44;
+      padding: 8px 10px;
+      font-size: 12px;
+      text-align: left;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    th {
+      color: #bdd3f6;
+      letter-spacing: 0.2px;
+    }
+
+    .col-time { width: 175px; }
+    .col-source { width: 90px; }
+    .col-level { width: 85px; }
+    .col-event { width: 200px; }
+    .col-rid { width: 90px; }
+    .col-tid { width: 130px; }
+    .col-message { width: auto; }
+
+    .badge {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-block;
+      letter-spacing: 0.2px;
+    }
+
+    .level-INFO { background: rgba(61, 165, 255, 0.2); color: #84c7ff; }
+    .level-WARNING { background: rgba(240, 180, 41, 0.2); color: #ffd584; }
+    .level-ERROR { background: rgba(240, 82, 82, 0.22); color: #ff9f9f; }
+    .level-RAW { background: rgba(124, 138, 165, 0.2); color: #b8c4db; }
+
+    .event {
+      color: #9cd0ff;
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+      font-size: 11px;
+    }
+
+    .mono {
+      font-family: "IBM Plex Mono", "Consolas", monospace;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .empty {
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    details summary {
+      cursor: pointer;
+      color: #9ec4ff;
+      font-size: 11px;
+    }
+
+    pre {
+      margin: 8px 0 0;
+      white-space: pre-wrap;
+      font-size: 11px;
+      color: #ccd9f1;
+      background: #0d1525;
+      border: 1px solid #23324d;
+      border-radius: 8px;
+      padding: 8px;
+    }
+
+    @media (max-width: 1100px) {
+      .controls {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 class="title">Log Dashboard</h1>
+        <div class="subtitle">Success + Error logs from <span class="mono">logs/app.log</span> and <span class="mono">logs/error.log</span></div>
+      </div>
+      <div class="status">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Connecting...</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div>
+        <label for="source-filter">Source</label>
+        <select id="source-filter">
+          <option value="all">All</option>
+          <option value="app.log">app.log</option>
+          <option value="error.log">error.log</option>
+        </select>
+      </div>
+      <div>
+        <label for="level-filter">Level</label>
+        <select id="level-filter">
+          <option value="all">All</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING">WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="RAW">RAW</option>
+        </select>
+      </div>
+      <div>
+        <label for="search-input">Search</label>
+        <input id="search-input" placeholder="message / event / request_id / task_id" />
+      </div>
+      <div>
+        <label for="max-rows">Max Rows</label>
+        <select id="max-rows">
+          <option value="1000">1000</option>
+          <option value="3000" selected>3000</option>
+          <option value="5000">5000</option>
+          <option value="8000">8000</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <button id="toggle-live">Pause Live</button>
+      </div>
+      <div class="toggle-row">
+        <button id="reload-btn">Reload Snapshot</button>
+      </div>
+    </div>
+
+    <div class="meta">
+      <span class="chip">Visible: <span id="visible-count" class="mono">0</span></span>
+      <span class="chip">Total Buffered: <span id="total-count" class="mono">0</span></span>
+      <span class="chip">Last Update: <span id="last-update" class="mono">-</span></span>
+      <span class="chip">Dropped: <span id="dropped-count" class="mono">0</span></span>
+      <span class="chip">Auto Scroll: <span id="autoscroll-state" class="mono">ON</span></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-time">Timestamp (KST)</th>
+            <th class="col-source">Source</th>
+            <th class="col-level">Level</th>
+            <th class="col-event">Event</th>
+            <th class="col-rid">Request ID</th>
+            <th class="col-tid">Task ID</th>
+            <th class="col-message">Message</th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+      <div class="empty" id="empty-state" hidden>No logs match the current filter.</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      entries: [],
+      cursor: { app_pos: 0, error_pos: 0 },
+      live: true,
+      dropped: 0,
+      pollMs: 2000,
+      inFlight: false,
+    };
+
+    const els = {
+      body: document.getElementById("log-body"),
+      empty: document.getElementById("empty-state"),
+      sourceFilter: document.getElementById("source-filter"),
+      levelFilter: document.getElementById("level-filter"),
+      searchInput: document.getElementById("search-input"),
+      maxRows: document.getElementById("max-rows"),
+      toggleLive: document.getElementById("toggle-live"),
+      reloadBtn: document.getElementById("reload-btn"),
+      visibleCount: document.getElementById("visible-count"),
+      totalCount: document.getElementById("total-count"),
+      lastUpdate: document.getElementById("last-update"),
+      droppedCount: document.getElementById("dropped-count"),
+      statusDot: document.getElementById("status-dot"),
+      statusText: document.getElementById("status-text"),
+      autoScrollState: document.getElementById("autoscroll-state"),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function isNearTop() {
+      const threshold = 120;
+      return window.scrollY < threshold;
+    }
+
+    function status(kind, text) {
+      els.statusDot.className = `dot ${kind}`;
+      els.statusText.textContent = text;
+    }
+
+    function trimErrorText(text) {
+      const t = String(text || "").trim().replace(/\s+/g, " ");
+      if (!t) return "";
+      return t.length > 110 ? `${t.slice(0, 110)}...` : t;
+    }
+
+    function formatTimestampKst(rawTs) {
+      if (!rawTs) return "-";
+
+      let normalized = String(rawTs).trim().replace(" ", "T");
+      if (!/(Z|[+\-]\d{2}:\d{2})$/i.test(normalized)) {
+        normalized = `${normalized}Z`;
+      }
+
+      const dt = new Date(normalized);
+      if (Number.isNaN(dt.getTime())) {
+        return String(rawTs);
+      }
+
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).formatToParts(dt);
+
+      const byType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+      return `${byType.year}-${byType.month}-${byType.day} ${byType.hour}:${byType.minute}:${byType.second} KST`;
+    }
+
+    async function fetchJson(url, label) {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) {
+        const body = trimErrorText(await response.text().catch(() => ""));
+        throw new Error(`${label} failed (${response.status})${body ? ` ${body}` : ""}`);
+      }
+      try {
+        return await response.json();
+      } catch (err) {
+        throw new Error(`${label} invalid JSON: ${err}`);
+      }
+    }
+
+    function maxRows() {
+      return Number(els.maxRows.value || 3000);
+    }
+
+    function currentFilters() {
+      return {
+        source: els.sourceFilter.value,
+        level: els.levelFilter.value,
+        query: (els.searchInput.value || "").trim().toLowerCase(),
+      };
+    }
+
+    function filteredEntries() {
+      const { source, level, query } = currentFilters();
+      return state.entries.filter((entry) => {
+        if (source !== "all" && entry.source !== source) return false;
+        if (level !== "all" && entry.level !== level) return false;
+        if (!query) return true;
+
+        const haystack = [
+          entry.timestamp,
+          entry.source,
+          entry.level,
+          entry.event,
+          entry.request_id,
+          entry.task_id,
+          entry.message,
+          JSON.stringify(entry.meta || {}),
+        ].join(" ").toLowerCase();
+
+        return haystack.includes(query);
+      });
+    }
+
+    function render() {
+      const rows = filteredEntries().slice().reverse();
+      els.visibleCount.textContent = rows.length.toLocaleString();
+      els.totalCount.textContent = state.entries.length.toLocaleString();
+      els.droppedCount.textContent = state.dropped.toLocaleString();
+      els.autoScrollState.textContent = isNearTop() ? "ON" : "OFF";
+
+      if (!rows.length) {
+        els.body.innerHTML = "";
+        els.empty.hidden = false;
+        return;
+      }
+      els.empty.hidden = true;
+
+      const html = rows.map((entry) => {
+        const levelClass = `level-${entry.level || "RAW"}`;
+        const meta = entry.meta && Object.keys(entry.meta).length > 0
+          ? `<details><summary>meta</summary><pre>${escapeHtml(JSON.stringify(entry.meta, null, 2))}</pre></details>`
+          : "";
+
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(formatTimestampKst(entry.timestamp))}</td>
+            <td class="mono">${escapeHtml(entry.source || "-")}</td>
+            <td><span class="badge ${levelClass}">${escapeHtml(entry.level || "RAW")}</span></td>
+            <td class="event">${escapeHtml(entry.event || "-")}</td>
+            <td class="mono">${escapeHtml(entry.request_id || "-")}</td>
+            <td class="mono">${escapeHtml(entry.task_id || "-")}</td>
+            <td>
+              <div>${escapeHtml(entry.message || "")}</div>
+              ${meta}
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      els.body.innerHTML = html;
+    }
+
+    function touchUpdateTime() {
+      els.lastUpdate.textContent = new Date().toLocaleTimeString();
+    }
+
+    async function fetchSnapshot() {
+      status("", "Loading snapshot...");
+      const payload = await fetchJson("/log/snapshot?limit=600", "snapshot");
+      state.entries = Array.isArray(payload.entries) ? payload.entries : [];
+      state.cursor = payload.cursor || { app_pos: 0, error_pos: 0 };
+      state.dropped = 0;
+      touchUpdateTime();
+      status("ok", "Live");
+      render();
+      window.scrollTo({ top: 0 });
+    }
+
+    async function fetchUpdates() {
+      if (state.inFlight) return;
+      state.inFlight = true;
+
+      const q = new URLSearchParams({
+        app_pos: String(state.cursor.app_pos || 0),
+        error_pos: String(state.cursor.error_pos || 0),
+        max_entries: "400",
+      });
+      try {
+        const payload = await fetchJson(`/log/updates?${q.toString()}`, "updates");
+        const updates = Array.isArray(payload.entries) ? payload.entries : [];
+        const wasNearTop = isNearTop();
+        let changed = false;
+
+        if (updates.length > 0) {
+          state.entries.push(...updates);
+          if (state.entries.length > maxRows()) {
+            state.entries = state.entries.slice(-maxRows());
+          }
+          changed = true;
+        }
+
+        if (Number(payload.dropped || 0) > 0) {
+          state.dropped += Number(payload.dropped || 0);
+          changed = true;
+        }
+        state.cursor = payload.cursor || state.cursor;
+
+        touchUpdateTime();
+        status("ok", state.live ? "Live" : "Paused");
+        if (changed) {
+          render();
+        }
+
+        if (wasNearTop && state.live && changed) {
+          window.scrollTo({ top: 0 });
+        }
+      } finally {
+        state.inFlight = false;
+      }
+    }
+
+    function attachEvents() {
+      els.sourceFilter.addEventListener("change", render);
+      els.levelFilter.addEventListener("change", render);
+      els.searchInput.addEventListener("input", render);
+      els.maxRows.addEventListener("change", () => {
+        if (state.entries.length > maxRows()) {
+          state.entries = state.entries.slice(-maxRows());
+        }
+        render();
+      });
+
+      els.toggleLive.addEventListener("click", () => {
+        state.live = !state.live;
+        els.toggleLive.textContent = state.live ? "Pause Live" : "Resume Live";
+        status(state.live ? "ok" : "", state.live ? "Live" : "Paused");
+      });
+
+      els.reloadBtn.addEventListener("click", async () => {
+        try {
+          await fetchSnapshot();
+        } catch (err) {
+          console.error(err);
+          status("err", "Reload failed");
+        }
+      });
+    }
+
+    async function start() {
+      attachEvents();
+      try {
+        await fetchSnapshot();
+      } catch (err) {
+        console.error(err);
+        status("err", "Snapshot failed");
+      }
+
+      setInterval(async () => {
+        if (!state.live) return;
+        try {
+          await fetchUpdates();
+        } catch (err) {
+          console.error(err);
+          status("err", `Update error: ${trimErrorText(err.message)}`);
+        }
+      }, state.pollMs);
+    }
+
+    start();
+  </script>
+</body>
+</html>

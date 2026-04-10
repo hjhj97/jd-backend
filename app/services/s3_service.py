@@ -34,7 +34,7 @@ def upload_pdf(pdf_bytes: bytes, s3_key: str) -> str:
         Body=pdf_bytes,
         ContentType="application/pdf",
     )
-    logger.info(f"S3 업로드 완료 - bucket={settings.AWS_S3_BUCKET}, key={s3_key}")
+    logger.debug(f"S3 업로드 완료 - bucket={settings.AWS_S3_BUCKET}, key={s3_key}")
 
     presigned_url = client.generate_presigned_url(
         "get_object",
@@ -53,6 +53,6 @@ def delete_pdf(s3_key: str) -> None:
     client = _s3_client()
     try:
         client.delete_object(Bucket=settings.AWS_S3_BUCKET, Key=s3_key)
-        logger.info(f"S3 삭제 완료 - key={s3_key}")
+        logger.debug(f"S3 삭제 완료 - key={s3_key}")
     except ClientError as e:
         logger.warning(f"S3 삭제 실패 - key={s3_key}, error={e}")

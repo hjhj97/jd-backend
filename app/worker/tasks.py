@@ -50,10 +50,16 @@ def process_patent(
                 s3_key=s3_key,
             )
         except SoftTimeLimitExceeded:
-            logger.error("소프트 타임아웃 초과 (240s)")
+            logger.bind(
+                event="analysis_pipeline_failed",
+                failure_reason="soft_time_limit_exceeded",
+            ).error("분석 파이프라인 실패")
             raise
         except Exception as e:
-            logger.exception(f"파이프라인 예외 발생: {e}")
+            logger.bind(
+                event="analysis_pipeline_failed",
+                failure_reason="unhandled_exception",
+            ).exception(f"분석 파이프라인 예외 발생: {e}")
             raise
 
 
@@ -67,9 +73,7 @@ def _run_pipeline(
 ) -> dict:
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
-    # --- Step 1: RunPod PDF 파싱 ---
     task.update_state(state="PARSING", meta={"msg": "PDF 파싱 중"})
-    logger.info("Step 1/3 - RunPod PDF 파싱 시작")
 
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
     try:
@@ -84,23 +88,10 @@ def _run_pipeline(
         # OCR 성공/실패 무관하게 S3 파일 즉시 삭제
         if s3_key:
             delete_pdf(s3_key)
-    logger.info(f"[OCR_JSON_DUMP_FILE] path={dump_file_path}")
 
-    text_length = len(text)
-    logger.info(f"[OCR_RAW_TEXT_LENGTH] chars={text_length}")
-    logger.info(f"PDF 파싱 완료 - {text_length} chars")
-
-    # --- Step 1.5: 특허 타입 감지 ---
     patent_type_info = detect_patent_type(text)
-    logger.info(
-        f"[PATENT_TYPE] type={patent_type_info['patent_type']}, "
-        f"kind_code={patent_type_info['patent_kind_code']}, "
-        f"patent_number={patent_type_info.get('patent_number')}"
-    )
 
-    # --- Step 2: JDPatent 작업 등록 ---
     task.update_state(state="JDPATENT_SUBMIT", meta={"msg": "JDPatent 작업 등록 중"})
-    logger.info("Step 2/3 - JDPatent 작업 등록")
     submit_jdpatent_job(
         task_id=task.request.id,
         raw_text=text,
@@ -109,13 +100,9 @@ def _run_pipeline(
         patent_kind_code=patent_type_info["patent_kind_code"],
     )
 
-    # --- Step 3: JDPatent 결과 대기 ---
     task.update_state(state="JDPATENT_PROCESSING", meta={"msg": "JDPatent 결과 대기 중"})
-    logger.info("Step 3/3 - JDPatent 결과 polling")
     result = poll_jdpatent_result(task.request.id)
-    logger.info("JDPatent 결과 수신 완료")
 
-    # --- Step 4: 특허 타입 정보 주입 ---
     if isinstance(result, dict):
         basic_info = result.get("basic_info")
         if isinstance(basic_info, dict):
@@ -124,5 +111,14 @@ def _run_pipeline(
         else:
             result["patent_type"] = patent_type_info["patent_type"]
             result["patent_kind_code"] = patent_type_info["patent_kind_code"]
+
+    logger.bind(
+        event="analysis_pipeline_succeeded",
+        task_id=task.request.id,
+        ocr_dump_file_path=dump_file_path,
+        patent_type=patent_type_info["patent_type"],
+        patent_kind_code=patent_type_info["patent_kind_code"],
+        ocr_text_length=len(text),
+    ).info("분석 파이프라인 성공")
 
     return result

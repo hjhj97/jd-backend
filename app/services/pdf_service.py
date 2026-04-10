@@ -30,7 +30,7 @@ def _dump_ocr_json(dump_file_path: str | None, payload: dict[str, Any]) -> None:
     path = Path(dump_file_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    logger.info(f"OCR 결과 JSON 저장 완료 - {path}")
+    logger.debug(f"OCR 결과 JSON 저장 완료 - {path}")
 
 
 def _extract_text_from_output(output: Any) -> str:
@@ -82,7 +82,9 @@ def parse_pdf_via_runpod(
     if patent_origin:
         payload_input["patent_origin"] = patent_origin
 
-    logger.info("RunPod OCR 요청 전송 시작")
+    input_source = "pdf_url" if pdf_url else "pdf_base64"
+    started_at = time.monotonic()
+
     with httpx.Client(timeout=30.0) as client:
         try:
             run_response = client.post(
@@ -92,6 +94,13 @@ def parse_pdf_via_runpod(
             )
             run_response.raise_for_status()
         except httpx.TimeoutException as exc:
+            logger.bind(
+                event="runpod_job_enqueue_failed",
+                runpod_error_code="runpod_timeout",
+                input_source=input_source,
+                filename=filename,
+                patent_origin=patent_origin,
+            ).error("RunPod 작업 큐 등록 실패")
             raise RuntimeError("runpod_timeout") from exc
         except httpx.HTTPStatusError as exc:
             response = exc.response
@@ -106,18 +115,55 @@ def parse_pdf_via_runpod(
             if status_code == 400 and any(
                 key in body_lc for key in ["too large", "payload", "request body", "body size", "input too long"]
             ):
+                logger.bind(
+                    event="runpod_job_enqueue_failed",
+                    runpod_error_code="runpod_pdf_too_large",
+                    status_code=status_code,
+                    input_source=input_source,
+                    filename=filename,
+                    patent_origin=patent_origin,
+                ).error("RunPod 작업 큐 등록 실패")
                 raise RuntimeError("runpod_pdf_too_large") from exc
             if status_code == 400:
+                logger.bind(
+                    event="runpod_job_enqueue_failed",
+                    runpod_error_code="runpod_bad_request",
+                    status_code=status_code,
+                    input_source=input_source,
+                    filename=filename,
+                    patent_origin=patent_origin,
+                ).error("RunPod 작업 큐 등록 실패")
                 raise RuntimeError("runpod_bad_request") from exc
+            logger.bind(
+                event="runpod_job_enqueue_failed",
+                runpod_error_code=f"runpod_http_{status_code or 'unknown'}",
+                status_code=status_code,
+                input_source=input_source,
+                filename=filename,
+                patent_origin=patent_origin,
+            ).error("RunPod 작업 큐 등록 실패")
             raise RuntimeError(f"runpod_http_{status_code or 'unknown'}") from exc
 
         run_data = run_response.json()
 
     job_id = run_data.get("id")
     if not job_id:
+        logger.bind(
+            event="runpod_job_enqueue_failed",
+            runpod_error_code="runpod_job_id_missing",
+            input_source=input_source,
+            filename=filename,
+            patent_origin=patent_origin,
+        ).error("RunPod 작업 큐 등록 실패")
         raise RuntimeError(f"RunPod 작업 제출 실패: {run_data}")
 
-    logger.info(f"RunPod job 제출 완료 - job_id={job_id}")
+    logger.bind(
+        event="runpod_job_enqueued",
+        runpod_job_id=job_id,
+        input_source=input_source,
+        filename=filename,
+        patent_origin=patent_origin,
+    ).info("RunPod 작업 큐 등록 성공")
 
     elapsed = 0
     with httpx.Client(timeout=20.0) as client:
@@ -129,10 +175,23 @@ def parse_pdf_via_runpod(
                 )
                 status_response.raise_for_status()
             except httpx.TimeoutException as exc:
+                logger.bind(
+                    event="runpod_ocr_failed",
+                    runpod_job_id=job_id,
+                    runpod_error_code="runpod_timeout",
+                    elapsed_seconds=round(time.monotonic() - started_at, 3),
+                ).error("RunPod OCR 실패")
                 raise RuntimeError("runpod_timeout") from exc
             except httpx.HTTPStatusError as exc:
                 response = exc.response
                 status_code = response.status_code if response is not None else None
+                logger.bind(
+                    event="runpod_ocr_failed",
+                    runpod_job_id=job_id,
+                    runpod_error_code=f"runpod_http_{status_code or 'unknown'}",
+                    status_code=status_code,
+                    elapsed_seconds=round(time.monotonic() - started_at, 3),
+                ).error("RunPod OCR 실패")
                 raise RuntimeError(f"runpod_http_{status_code or 'unknown'}") from exc
             status_data = status_response.json()
             status = str(status_data.get("status", "")).upper()
@@ -150,9 +209,12 @@ def parse_pdf_via_runpod(
                         "ocr_text_length": len(text),
                     },
                 )
-                logger.info(
-                    f"RunPod OCR 완료 - job_id={job_id}, text_length={len(text)} chars"
-                )
+                logger.bind(
+                    event="runpod_ocr_succeeded",
+                    runpod_job_id=job_id,
+                    ocr_text_length=len(text),
+                    elapsed_seconds=round(time.monotonic() - started_at, 3),
+                ).info("RunPod OCR 성공")
                 return text
 
             if status in ("FAILED", "CANCELLED"):
@@ -167,6 +229,14 @@ def parse_pdf_via_runpod(
                         "error": str(error_msg),
                     },
                 )
+                logger.bind(
+                    event="runpod_ocr_failed",
+                    runpod_job_id=job_id,
+                    runpod_status=status,
+                    runpod_error_code="runpod_job_failed",
+                    error=str(error_msg),
+                    elapsed_seconds=round(time.monotonic() - started_at, 3),
+                ).error("RunPod OCR 실패")
                 raise RuntimeError(
                     f"RunPod 작업 실패 - job_id={job_id}, status={status}, error={error_msg}"
                 )
@@ -174,4 +244,10 @@ def parse_pdf_via_runpod(
             time.sleep(_POLL_INTERVAL)
             elapsed += _POLL_INTERVAL
 
+    logger.bind(
+        event="runpod_ocr_failed",
+        runpod_job_id=job_id,
+        runpod_error_code="runpod_timeout",
+        elapsed_seconds=round(time.monotonic() - started_at, 3),
+    ).error("RunPod OCR 실패")
     raise RuntimeError("runpod_timeout")

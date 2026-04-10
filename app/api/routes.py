@@ -214,14 +214,31 @@ async def analyze_patent(
 
     s3_key = f"uploads/{uuid.uuid4().hex}.pdf"
     pdf_url = upload_pdf(pdf_bytes, s3_key)
-    task = process_patent.delay(None, request_id, file.filename, pdf_url, country, s3_key)
-    logger.info(
-        f"PDF 업로드 완료 - filename={file.filename}, "
-        f"size={len(pdf_bytes)} bytes, "
-        f"s3_key={s3_key}"
-    )
 
-    logger.info(f"Task 큐잉 완료 - task_id={task.id}")
+    try:
+        task = process_patent.delay(None, request_id, file.filename, pdf_url, country, s3_key)
+    except Exception as exc:
+        logger.bind(
+            event="analysis_task_enqueue_failed",
+            filename=file.filename,
+            file_size_bytes=len(pdf_bytes),
+            country=country,
+            s3_key=s3_key,
+        ).exception(f"분석 작업 큐 등록 실패: {exc}")
+        raise
+
+    logger.bind(
+        event="pdf_upload_received",
+        task_id=task.id,
+        filename=file.filename,
+        file_size_bytes=len(pdf_bytes),
+        country=country,
+        s3_key=s3_key,
+    ).info("PDF 업로드 메타데이터 저장")
+    logger.bind(
+        event="analysis_task_enqueued",
+        task_id=task.id,
+    ).info("분석 작업 큐 등록 성공")
 
     return {
         "success": True,

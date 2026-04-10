@@ -1,10 +1,12 @@
 import json
 import uuid
 from asyncio import Task, create_task, sleep
+from datetime import datetime
+from typing import Any
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -115,15 +117,9 @@ async def logging_middleware(request: Request, call_next):
     request.state.request_id = request_id
 
     with logger.contextualize(request_id=request_id):
-        logger.info(f">> {request.method} {request.url.path}")
-        try:
-            response = await call_next(request)
-            logger.info(f"<< {response.status_code}")
-            response.headers["X-Request-ID"] = request_id
-            return response
-        except Exception as e:
-            logger.exception(f"Unhandled error: {e}")
-            raise
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +159,137 @@ async def health_check():
 
 _STATIC_DIR = Path(__file__).parent / "static"
 _V3_RESULT_PATH = _STATIC_DIR / "output_v3.json"
+_LOG_VIEWER_PATH = _STATIC_DIR / "log_viewer.html"
+_APP_LOG_PATH = Path("logs/app.log")
+_ERROR_LOG_PATH = Path("logs/error.log")
+
+
+def _safe_sortable_timestamp(ts: str | None) -> str:
+    """정렬 가능한 timestamp 문자열을 반환한다.
+
+    datetime aware/naive 혼합 비교 예외를 피하기 위해 문자열 키를 사용한다.
+    """
+    if not ts:
+        return ""
+    try:
+        return datetime.fromisoformat(ts).isoformat()
+    except ValueError:
+        return str(ts)
+
+
+def _parse_json_log_line(raw_line: str, source: str, offset: int) -> dict[str, Any] | None:
+    line = raw_line.strip()
+    if not line:
+        return None
+
+    base = {
+        "id": f"{source}:{offset}",
+        "source": source,
+        "offset": offset,
+        "timestamp": None,
+        "level": "RAW",
+        "message": line,
+        "event": None,
+        "request_id": None,
+        "task_id": None,
+        "meta": {},
+    }
+
+    try:
+        payload = json.loads(line)
+    except json.JSONDecodeError:
+        return base
+
+    record = payload.get("record")
+    if not isinstance(record, dict):
+        text = payload.get("text")
+        if isinstance(text, str) and text.strip():
+            base["message"] = text.strip()
+        return base
+
+    level_data = record.get("level")
+    if isinstance(level_data, dict):
+        base["level"] = str(level_data.get("name", "RAW"))
+
+    time_data = record.get("time")
+    if isinstance(time_data, dict):
+        timestamp = time_data.get("repr")
+        if isinstance(timestamp, str):
+            base["timestamp"] = timestamp
+
+    message = record.get("message")
+    if isinstance(message, str) and message.strip():
+        base["message"] = message.strip()
+
+    extra_data = record.get("extra")
+    if isinstance(extra_data, dict):
+        base["event"] = extra_data.get("event")
+        base["request_id"] = extra_data.get("request_id")
+        base["task_id"] = extra_data.get("task_id")
+        base["meta"] = {
+            k: v
+            for k, v in extra_data.items()
+            if k not in {"event", "request_id", "task_id"}
+        }
+
+    return base
+
+
+def _read_log_updates(path: Path, cursor: int, source: str) -> tuple[list[dict[str, Any]], int]:
+    if not path.exists():
+        return [], 0
+
+    file_size = path.stat().st_size
+    if cursor < 0:
+        cursor = 0
+    elif cursor > file_size:
+        # 파일이 truncate/rotate 된 경우: 전체 재스캔 대신 현재 EOF로 점프
+        return [], file_size
+
+    entries: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8", errors="replace") as f:
+        f.seek(cursor)
+        while True:
+            offset = f.tell()
+            raw_line = f.readline()
+            if not raw_line:
+                break
+            parsed = _parse_json_log_line(raw_line, source=source, offset=offset)
+            if parsed:
+                entries.append(parsed)
+        next_cursor = f.tell()
+
+    return entries, next_cursor
+
+
+def _tail_log_entries(path: Path, source: str, limit: int) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+
+    with path.open("r", encoding="utf-8", errors="replace") as f:
+        raw_lines = f.readlines()
+
+    if limit > 0:
+        raw_lines = raw_lines[-limit:]
+
+    entries: list[dict[str, Any]] = []
+    for idx, raw_line in enumerate(raw_lines):
+        parsed = _parse_json_log_line(raw_line, source=source, offset=idx)
+        if parsed:
+            parsed["id"] = f"{source}:tail:{idx}"
+            entries.append(parsed)
+    return entries
+
+
+def _sort_log_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return sorted(
+        entries,
+        key=lambda e: (
+            _safe_sortable_timestamp(e.get("timestamp")),
+            str(e.get("source", "")),
+            int(e.get("offset", 0)),
+        ),
+    )
 
 
 @app.get(
@@ -221,6 +348,62 @@ async def get_v3_result(task_id: str):
             raise HTTPException(status_code=500, detail="output_v3.json JSON 파싱에 실패했습니다.") from exc
 
     return v1_response
+
+
+@app.get("/log")
+async def log_dashboard():
+    if not _LOG_VIEWER_PATH.exists():
+        raise HTTPException(status_code=404, detail="log viewer page not found")
+    return FileResponse(_LOG_VIEWER_PATH, media_type="text/html")
+
+
+@app.get("/log/snapshot")
+async def log_snapshot(limit: int = Query(default=400, ge=100, le=5000)):
+    app_entries = _tail_log_entries(_APP_LOG_PATH, source="app.log", limit=limit)
+    error_entries = _tail_log_entries(_ERROR_LOG_PATH, source="error.log", limit=limit)
+    merged = _sort_log_entries(app_entries + error_entries)
+    if len(merged) > limit:
+        merged = merged[-limit:]
+
+    app_pos = _APP_LOG_PATH.stat().st_size if _APP_LOG_PATH.exists() else 0
+    error_pos = _ERROR_LOG_PATH.stat().st_size if _ERROR_LOG_PATH.exists() else 0
+
+    return {
+        "entries": merged,
+        "cursor": {
+            "app_pos": app_pos,
+            "error_pos": error_pos,
+        },
+    }
+
+
+@app.get("/log/updates")
+async def log_updates(
+    app_pos: int = Query(default=0, ge=0),
+    error_pos: int = Query(default=0, ge=0),
+    max_entries: int = Query(default=1000, ge=100, le=10000),
+):
+    app_entries, next_app_pos = _read_log_updates(_APP_LOG_PATH, cursor=app_pos, source="app.log")
+    error_entries, next_error_pos = _read_log_updates(
+        _ERROR_LOG_PATH,
+        cursor=error_pos,
+        source="error.log",
+    )
+    merged = _sort_log_entries(app_entries + error_entries)
+
+    dropped = 0
+    if len(merged) > max_entries:
+        dropped = len(merged) - max_entries
+        merged = merged[-max_entries:]
+
+    return {
+        "entries": merged,
+        "dropped": dropped,
+        "cursor": {
+            "app_pos": next_app_pos,
+            "error_pos": next_error_pos,
+        },
+    }
 
 
 @app.get("/sample")
