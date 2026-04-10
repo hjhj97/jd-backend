@@ -144,6 +144,73 @@
       background: #0f1728;
     }
 
+    .queue-panel {
+      background: color-mix(in srgb, var(--panel) 86%, #000);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .queue-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .queue-card {
+      border: 1px solid #2a3b5e;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #0f1728;
+    }
+
+    .queue-card .label {
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .queue-card .value {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .stage-card {
+      border: 1px solid #2a3b5e;
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #0f1728;
+      min-height: 88px;
+    }
+
+    .stage-title {
+      color: #9fd0ff;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .stage-count {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stage-ids {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.35;
+      word-break: break-all;
+    }
+
     .table-wrap {
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -201,11 +268,36 @@
     .level-ERROR { background: rgba(240, 82, 82, 0.22); color: #ff9f9f; }
     .level-RAW { background: rgba(124, 138, 165, 0.2); color: #b8c4db; }
 
-    .event {
-      color: #9cd0ff;
+    .event-cell {
       font-family: "IBM Plex Mono", "Consolas", monospace;
       font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      border-left: 4px solid transparent;
     }
+
+    .event-badge {
+      display: inline-block;
+      border-radius: 6px;
+      padding: 2px 6px;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      white-space: nowrap;
+    }
+
+    .event-empty { background: rgba(124, 138, 165, 0.28); color: #d1daec; border-left-color: rgba(124, 138, 165, 0.9); }
+    .event-error { background: rgba(240, 82, 82, 0.45); color: #ffe2e2; border-left-color: rgba(255, 120, 120, 0.95); }
+    .event-report-success { background: rgba(27, 191, 131, 0.42); color: #ddfff3; border-left-color: rgba(109, 248, 189, 0.95); }
+    .event-analysis-enqueued { background: rgba(245, 248, 255, 0.42); color: #f6f9ff; border-left-color: rgba(240, 245, 255, 0.95); }
+    .event-runpod-enqueued { background: rgba(255, 214, 102, 0.5); color: #fff9e5; border-left-color: rgba(255, 232, 156, 0.98); }
+    .event-c0 { background: rgba(61, 165, 255, 0.4); color: #e6f3ff; border-left-color: rgba(142, 204, 255, 0.95); }
+    .event-c1 { background: rgba(173, 120, 255, 0.4); color: #f3e8ff; border-left-color: rgba(206, 166, 255, 0.95); }
+    .event-c2 { background: rgba(255, 159, 67, 0.42); color: #fff1e2; border-left-color: rgba(255, 195, 132, 0.95); }
+    .event-c3 { background: rgba(56, 217, 169, 0.4); color: #e7fff7; border-left-color: rgba(140, 245, 215, 0.95); }
+    .event-c4 { background: rgba(255, 214, 102, 0.4); color: #fff9e5; border-left-color: rgba(255, 232, 156, 0.95); }
+    .event-c5 { background: rgba(100, 223, 223, 0.4); color: #e7ffff; border-left-color: rgba(156, 244, 244, 0.95); }
+    .event-c6 { background: rgba(255, 143, 163, 0.4); color: #fff0f4; border-left-color: rgba(255, 185, 198, 0.95); }
+    .event-c7 { background: rgba(121, 134, 203, 0.42); color: #ecf0ff; border-left-color: rgba(174, 184, 235, 0.95); }
 
     .mono {
       font-family: "IBM Plex Mono", "Consolas", monospace;
@@ -241,6 +333,11 @@
 
     @media (max-width: 1100px) {
       .controls {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+
+      .queue-grid,
+      .stage-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
       }
     }
@@ -299,6 +396,68 @@
       </div>
     </div>
 
+    <div class="queue-panel">
+      <div class="queue-grid">
+        <div class="queue-card">
+          <div class="label">Broker Queue</div>
+          <div class="value mono" id="queue-broker-ready">-</div>
+        </div>
+        <div class="queue-card">
+          <div class="label">Reserved</div>
+          <div class="value mono" id="queue-reserved">-</div>
+        </div>
+        <div class="queue-card">
+          <div class="label">Scheduled</div>
+          <div class="value mono" id="queue-scheduled">-</div>
+        </div>
+        <div class="queue-card">
+          <div class="label">Active</div>
+          <div class="value mono" id="queue-active">-</div>
+        </div>
+        <div class="queue-card">
+          <div class="label">Queued Estimate</div>
+          <div class="value mono" id="queue-estimate">-</div>
+        </div>
+        <div class="queue-card">
+          <div class="label">Queue Updated</div>
+          <div class="value mono" id="queue-updated">-</div>
+        </div>
+      </div>
+
+      <div class="stage-grid">
+        <div class="stage-card">
+          <div class="stage-title">Queued</div>
+          <div class="stage-count mono" id="stage-queued">-</div>
+          <div class="stage-ids mono" id="stage-queued-ids">-</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-title">RunPod (PARSING)</div>
+          <div class="stage-count mono" id="stage-runpod">-</div>
+          <div class="stage-ids mono" id="stage-runpod-ids">-</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-title">JD Submit</div>
+          <div class="stage-count mono" id="stage-submit">-</div>
+          <div class="stage-ids mono" id="stage-submit-ids">-</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-title">JD Processing</div>
+          <div class="stage-count mono" id="stage-processing">-</div>
+          <div class="stage-ids mono" id="stage-processing-ids">-</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-title">Worker Processing</div>
+          <div class="stage-count mono" id="stage-worker">-</div>
+          <div class="stage-ids mono" id="stage-worker-ids">-</div>
+        </div>
+        <div class="stage-card">
+          <div class="stage-title">Other Active</div>
+          <div class="stage-count mono" id="stage-other">-</div>
+          <div class="stage-ids mono" id="stage-other-ids">-</div>
+        </div>
+      </div>
+    </div>
+
     <div class="meta">
       <span class="chip">Visible: <span id="visible-count" class="mono">0</span></span>
       <span class="chip">Total Buffered: <span id="total-count" class="mono">0</span></span>
@@ -334,6 +493,7 @@
       dropped: 0,
       pollMs: 2000,
       inFlight: false,
+      queueInFlight: false,
     };
 
     const els = {
@@ -352,6 +512,24 @@
       statusDot: document.getElementById("status-dot"),
       statusText: document.getElementById("status-text"),
       autoScrollState: document.getElementById("autoscroll-state"),
+      queueBrokerReady: document.getElementById("queue-broker-ready"),
+      queueReserved: document.getElementById("queue-reserved"),
+      queueScheduled: document.getElementById("queue-scheduled"),
+      queueActive: document.getElementById("queue-active"),
+      queueEstimate: document.getElementById("queue-estimate"),
+      queueUpdated: document.getElementById("queue-updated"),
+      stageQueued: document.getElementById("stage-queued"),
+      stageQueuedIds: document.getElementById("stage-queued-ids"),
+      stageRunpod: document.getElementById("stage-runpod"),
+      stageRunpodIds: document.getElementById("stage-runpod-ids"),
+      stageSubmit: document.getElementById("stage-submit"),
+      stageSubmitIds: document.getElementById("stage-submit-ids"),
+      stageProcessing: document.getElementById("stage-processing"),
+      stageProcessingIds: document.getElementById("stage-processing-ids"),
+      stageWorker: document.getElementById("stage-worker"),
+      stageWorkerIds: document.getElementById("stage-worker-ids"),
+      stageOther: document.getElementById("stage-other"),
+      stageOtherIds: document.getElementById("stage-other-ids"),
     };
 
     function escapeHtml(value) {
@@ -405,6 +583,89 @@
 
       const byType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
       return `${byType.year}-${byType.month}-${byType.day} ${byType.hour}:${byType.minute}:${byType.second} KST`;
+    }
+
+    function hashText(text) {
+      let h = 0;
+      const s = String(text || "");
+      for (let i = 0; i < s.length; i += 1) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      }
+      return Math.abs(h);
+    }
+
+    function eventBadgeClass(eventName, level) {
+      const event = String(eventName || "").trim();
+      const normalized = event.toLowerCase();
+      const levelName = String(level || "").toUpperCase();
+
+      if (!event) return "event-empty";
+      if (normalized === "report_generation_succeeded") return "event-report-success";
+      if (normalized === "analysis_task_enqueued") return "event-analysis-enqueued";
+      if (normalized === "runpod_job_enqueued") return "event-runpod-enqueued";
+      if (
+        levelName === "ERROR" ||
+        normalized.includes("failed") ||
+        normalized.includes("error") ||
+        normalized.includes("timeout")
+      ) {
+        return "event-error";
+      }
+
+      return `event-c${hashText(normalized) % 8}`;
+    }
+
+    function numberOrZero(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function formatTaskIds(ids, unknownCount = 0, maxItems = 3) {
+      const safeIds = Array.isArray(ids) ? ids.filter(Boolean) : [];
+      const shown = safeIds.slice(0, maxItems);
+      const chunks = shown.map((id) => id.slice(0, 8));
+      if (safeIds.length > maxItems) {
+        chunks.push(`+${safeIds.length - maxItems}`);
+      }
+      if (unknownCount > 0) {
+        chunks.push(`+${unknownCount} broker`);
+      }
+      return chunks.length ? chunks.join(", ") : "-";
+    }
+
+    function renderQueuePanel(payload) {
+      const queue = payload && payload.queue ? payload.queue : {};
+      const workers = payload && payload.workers ? payload.workers : {};
+      const stages = payload && payload.stages ? payload.stages : {};
+      const taskIds = payload && payload.task_ids ? payload.task_ids : {};
+
+      const brokerReady = numberOrZero(queue.broker_ready_count);
+      const reserved = numberOrZero(queue.reserved_count);
+      const scheduled = numberOrZero(queue.scheduled_count);
+      const active = numberOrZero(workers.active_count);
+      const queuedEstimate = numberOrZero(queue.queued_estimate);
+      const queuedUnknownIds = numberOrZero(queue.queued_unknown_ids_count);
+
+      els.queueBrokerReady.textContent = brokerReady.toLocaleString();
+      els.queueReserved.textContent = reserved.toLocaleString();
+      els.queueScheduled.textContent = scheduled.toLocaleString();
+      els.queueActive.textContent = active.toLocaleString();
+      els.queueEstimate.textContent = queuedEstimate.toLocaleString();
+      els.queueUpdated.textContent = new Date().toLocaleTimeString();
+
+      els.stageQueued.textContent = numberOrZero(stages.queued).toLocaleString();
+      els.stageRunpod.textContent = numberOrZero(stages.runpod_parsing).toLocaleString();
+      els.stageSubmit.textContent = numberOrZero(stages.jdpatent_submit).toLocaleString();
+      els.stageProcessing.textContent = numberOrZero(stages.jdpatent_processing).toLocaleString();
+      els.stageWorker.textContent = numberOrZero(stages.worker_processing).toLocaleString();
+      els.stageOther.textContent = numberOrZero(stages.other_active).toLocaleString();
+
+      els.stageQueuedIds.textContent = formatTaskIds(taskIds.queued_known, queuedUnknownIds);
+      els.stageRunpodIds.textContent = formatTaskIds(taskIds.runpod_parsing);
+      els.stageSubmitIds.textContent = formatTaskIds(taskIds.jdpatent_submit);
+      els.stageProcessingIds.textContent = formatTaskIds(taskIds.jdpatent_processing);
+      els.stageWorkerIds.textContent = formatTaskIds(taskIds.worker_processing);
+      els.stageOtherIds.textContent = formatTaskIds(taskIds.other_active);
     }
 
     async function fetchJson(url, label) {
@@ -470,6 +731,7 @@
 
       const html = rows.map((entry) => {
         const levelClass = `level-${entry.level || "RAW"}`;
+        const eventClass = eventBadgeClass(entry.event, entry.level);
         const meta = entry.meta && Object.keys(entry.meta).length > 0
           ? `<details><summary>meta</summary><pre>${escapeHtml(JSON.stringify(entry.meta, null, 2))}</pre></details>`
           : "";
@@ -479,7 +741,7 @@
             <td class="mono">${escapeHtml(formatTimestampKst(entry.timestamp))}</td>
             <td class="mono">${escapeHtml(entry.source || "-")}</td>
             <td><span class="badge ${levelClass}">${escapeHtml(entry.level || "RAW")}</span></td>
-            <td class="event">${escapeHtml(entry.event || "-")}</td>
+            <td class="event-cell ${eventClass}"><span class="event-badge">${escapeHtml(entry.event || "-")}</span></td>
             <td class="mono">${escapeHtml(entry.request_id || "-")}</td>
             <td class="mono">${escapeHtml(entry.task_id || "-")}</td>
             <td>
@@ -507,6 +769,17 @@
       status("ok", "Live");
       render();
       window.scrollTo({ top: 0 });
+    }
+
+    async function fetchQueueSnapshot() {
+      if (state.queueInFlight) return;
+      state.queueInFlight = true;
+      try {
+        const payload = await fetchJson("/log/queue", "queue");
+        renderQueuePanel(payload);
+      } finally {
+        state.queueInFlight = false;
+      }
     }
 
     async function fetchUpdates() {
@@ -572,6 +845,7 @@
       els.reloadBtn.addEventListener("click", async () => {
         try {
           await fetchSnapshot();
+          await fetchQueueSnapshot();
         } catch (err) {
           console.error(err);
           status("err", "Reload failed");
@@ -583,18 +857,25 @@
       attachEvents();
       try {
         await fetchSnapshot();
+        await fetchQueueSnapshot();
       } catch (err) {
         console.error(err);
         status("err", "Snapshot failed");
       }
 
       setInterval(async () => {
-        if (!state.live) return;
+        if (state.live) {
+          try {
+            await fetchUpdates();
+          } catch (err) {
+            console.error(err);
+            status("err", `Update error: ${trimErrorText(err.message)}`);
+          }
+        }
         try {
-          await fetchUpdates();
+          await fetchQueueSnapshot();
         } catch (err) {
           console.error(err);
-          status("err", `Update error: ${trimErrorText(err.message)}`);
         }
       }, state.pollMs);
     }

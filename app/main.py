@@ -1,11 +1,13 @@
 import json
 import uuid
 from asyncio import Task, create_task, sleep
+from collections import Counter
 from datetime import datetime
 from typing import Any
 
 from pathlib import Path
 
+from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +18,7 @@ from app.api.routes import get_result as get_v1_result, router
 from app.config import settings
 from app.logging_config import setup_logging
 from app.services.temp_pdf_service import cleanup_expired_temp_pdfs
+from app.worker.celery_app import celery_app
 
 # 로깅 초기화
 setup_logging()
@@ -292,6 +295,54 @@ def _sort_log_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
 
+def _extract_task_id_from_inspect_item(item: Any) -> str | None:
+    if not isinstance(item, dict):
+        return None
+
+    for key in ("id", "uuid", "task_id"):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+
+    request_data = item.get("request")
+    if isinstance(request_data, dict):
+        for key in ("id", "uuid", "task_id"):
+            value = request_data.get(key)
+            if isinstance(value, str) and value:
+                return value
+
+    return None
+
+
+def _collect_task_ids_from_inspect_payload(payload: Any) -> list[str]:
+    if not isinstance(payload, dict):
+        return []
+
+    task_ids: set[str] = set()
+    for items in payload.values():
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            task_id = _extract_task_id_from_inspect_item(item)
+            if task_id:
+                task_ids.add(task_id)
+
+    return sorted(task_ids)
+
+
+def _state_to_stage(state: str) -> str:
+    normalized = (state or "").upper()
+    if normalized == "PARSING":
+        return "runpod_parsing"
+    if normalized == "JDPATENT_SUBMIT":
+        return "jdpatent_submit"
+    if normalized == "JDPATENT_PROCESSING":
+        return "jdpatent_processing"
+    if normalized in {"STARTED", "RETRY"}:
+        return "worker_processing"
+    return "other_active"
+
+
 @app.get(
     "/api/v3/result/{task_id}",
     summary="v3 결과 조회",
@@ -402,6 +453,79 @@ async def log_updates(
         "cursor": {
             "app_pos": next_app_pos,
             "error_pos": next_error_pos,
+        },
+    }
+
+
+@app.get("/log/queue")
+async def log_queue_snapshot():
+    inspect = celery_app.control.inspect(timeout=0.5)
+    active_payload = inspect.active() if inspect else {}
+    reserved_payload = inspect.reserved() if inspect else {}
+    scheduled_payload = inspect.scheduled() if inspect else {}
+
+    active_ids = _collect_task_ids_from_inspect_payload(active_payload)
+    reserved_ids = _collect_task_ids_from_inspect_payload(reserved_payload)
+    scheduled_ids = _collect_task_ids_from_inspect_payload(scheduled_payload)
+
+    stage_counts: Counter[str] = Counter()
+    stage_task_ids: dict[str, list[str]] = {
+        "runpod_parsing": [],
+        "jdpatent_submit": [],
+        "jdpatent_processing": [],
+        "worker_processing": [],
+        "other_active": [],
+    }
+
+    for task_id in active_ids:
+        state = AsyncResult(task_id, app=celery_app).state
+        stage = _state_to_stage(state)
+        stage_counts[stage] += 1
+        stage_task_ids.setdefault(stage, []).append(task_id)
+
+    broker_ready_count = 0
+    try:
+        backend_client = getattr(celery_app.backend, "client", None)
+        if backend_client is not None:
+            broker_ready_count = int(backend_client.llen("celery") or 0)
+    except Exception as exc:
+        logger.warning(f"큐 길이 조회 실패: {exc}")
+
+    queued_estimate = broker_ready_count + len(reserved_ids) + len(scheduled_ids)
+    queued_known_ids = sorted(set(reserved_ids + scheduled_ids))
+
+    return {
+        "snapshot_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "workers": {
+            "active_count": len(active_ids),
+            "reserved_count": len(reserved_ids),
+            "scheduled_count": len(scheduled_ids),
+        },
+        "queue": {
+            "broker_ready_count": broker_ready_count,
+            "reserved_count": len(reserved_ids),
+            "scheduled_count": len(scheduled_ids),
+            "queued_estimate": queued_estimate,
+            "queued_known_ids_count": len(queued_known_ids),
+            "queued_unknown_ids_count": broker_ready_count,
+        },
+        "stages": {
+            "queued": queued_estimate,
+            "runpod_parsing": stage_counts["runpod_parsing"],
+            "jdpatent_submit": stage_counts["jdpatent_submit"],
+            "jdpatent_processing": stage_counts["jdpatent_processing"],
+            "worker_processing": stage_counts["worker_processing"],
+            "other_active": stage_counts["other_active"],
+        },
+        "task_ids": {
+            "queued_known": queued_known_ids,
+            "reserved": reserved_ids,
+            "scheduled": scheduled_ids,
+            "runpod_parsing": stage_task_ids["runpod_parsing"],
+            "jdpatent_submit": stage_task_ids["jdpatent_submit"],
+            "jdpatent_processing": stage_task_ids["jdpatent_processing"],
+            "worker_processing": stage_task_ids["worker_processing"],
+            "other_active": stage_task_ids["other_active"],
         },
     }
 
