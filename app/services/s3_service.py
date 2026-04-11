@@ -44,6 +44,16 @@ def upload_pdf(pdf_bytes: bytes, s3_key: str) -> str:
     return presigned_url
 
 
+def generate_presigned_get_url(s3_key: str) -> str:
+    """기존 S3 오브젝트 키로 GET용 presigned URL을 생성한다."""
+    client = _s3_client()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.AWS_S3_BUCKET, "Key": s3_key},
+        ExpiresIn=settings.AWS_S3_PRESIGNED_URL_EXPIRES,
+    )
+
+
 def delete_pdf(s3_key: str) -> None:
     """S3에서 PDF를 삭제한다.
 

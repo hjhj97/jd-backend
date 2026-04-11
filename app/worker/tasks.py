@@ -7,7 +7,7 @@ from app.config import settings
 from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
 from app.services.patent_type_service import detect_patent_type
 from app.services.pdf_service import parse_pdf_via_runpod
-from app.services.s3_service import delete_pdf
+from app.services.s3_service import delete_pdf, generate_presigned_get_url
 from app.worker.celery_app import celery_app
 
 
@@ -75,11 +75,29 @@ def _run_pipeline(
 
     task.update_state(state="PARSING", meta={"msg": "PDF 파싱 중"})
 
+    # analyze 단계에서 plain S3 URL이 넘어오더라도, worker에서 presigned URL을
+    # 재생성해 RunPod 접근 403을 방지한다.
+    effective_pdf_url = pdf_url
+    if s3_key:
+        try:
+            effective_pdf_url = generate_presigned_get_url(s3_key)
+            logger.bind(
+                event="s3_presigned_url_regenerated",
+                task_id=task.request.id,
+                s3_key=s3_key,
+            ).debug("S3 presigned URL 재생성 완료")
+        except Exception as exc:
+            logger.bind(
+                event="s3_presigned_url_regenerate_failed",
+                task_id=task.request.id,
+                s3_key=s3_key,
+            ).warning(f"S3 presigned URL 재생성 실패, 기존 URL 사용: {exc}")
+
     dump_file_path = f"{settings.RUNPOD_OCR_DUMP_DIR.rstrip('/')}/{task.request.id}.json"
     try:
         text = parse_pdf_via_runpod(
             pdf_bytes_b64,
-            pdf_url=pdf_url,
+            pdf_url=effective_pdf_url,
             filename=original_filename,
             dump_file_path=dump_file_path,
             patent_origin=country,
