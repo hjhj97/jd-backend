@@ -20,7 +20,7 @@ celery_app.conf.update(
     result_serializer="json",
     accept_content=["json"],
     # Worker 동시성
-    worker_concurrency=2,
+    worker_concurrency=3,
     worker_prefetch_multiplier=1,  # 순서 보장에 유리
     # 안정성
     task_acks_late=True,  # 처리 완료 후 ACK
