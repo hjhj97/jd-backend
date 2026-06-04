@@ -22,7 +22,7 @@
   header { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--border); }
   h1 { font-size: 18px; font-weight: 750; }
   main { padding: 24px 28px; display: grid; gap: 16px; }
-  .toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 180px auto auto; gap: 10px; align-items: center; }
+  .toolbar { display: grid; grid-template-columns: 180px minmax(260px, 1fr) auto; gap: 10px; align-items: center; }
   input, select, button { height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
   input, select { padding: 0 12px; }
   button { padding: 0 14px; font-weight: 700; cursor: pointer; }
@@ -71,7 +71,6 @@
 </header>
 <main>
   <div class="toolbar">
-    <input id="token" type="password" placeholder="Admin token">
     <select id="statusFilter">
       <option value="">전체 상태</option>
       <option value="completed">완료</option>
@@ -202,12 +201,10 @@ function renderRows() {
   });
 }
 async function loadReports() {
-  const token = $("token").value.trim();
-  localStorage.setItem("adminToken", token);
   $("refreshBtn").disabled = true;
   $("rows").innerHTML = '<tr><td colspan="5"><div class="empty">조회 중...</div></td></tr>';
   try {
-    const res = await fetch("/admin/reports", { headers: { "X-Admin-Token": token } });
+    const res = await fetch("/admin/reports");
     const data = await res.json();
     if (!res.ok || data.success === false) throw new Error(data.msg || data.detail || "조회 실패");
     state.reports = data.reports || [];
@@ -220,11 +217,10 @@ async function loadReports() {
   }
 }
 async function loadDetail(taskId) {
-  const token = $("token").value.trim();
   $("detailBody").textContent = "조회 중...";
   $("copyBtn").disabled = true;
   try {
-    const res = await fetch("/admin/reports/" + encodeURIComponent(taskId), { headers: { "X-Admin-Token": token } });
+    const res = await fetch("/admin/reports/" + encodeURIComponent(taskId));
     const data = await res.json();
     if (!res.ok) throw new Error(data.msg || data.detail || "상세 조회 실패");
     state.detailText = JSON.stringify(data, null, 2);
@@ -243,7 +239,7 @@ $("copyBtn").addEventListener("click", async () => {
   if (!state.detailText) return;
   await navigator.clipboard.writeText(state.detailText);
 });
-$("token").value = localStorage.getItem("adminToken") || "";
+loadReports();
 </script>
 </body>
 </html>

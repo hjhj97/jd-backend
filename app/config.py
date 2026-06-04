@@ -30,7 +30,6 @@ class Settings(BaseSettings):
     # App
     LOG_LEVEL: str = "INFO"
     REPORT_RESULT_DIR: str = "/app/logs/report_results"
-    ADMIN_TOKEN: str = ""
 
     # JDPatent Internal API
     JDPATENT_API_URL: str = "http://jdpatent-api:8001"

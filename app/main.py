@@ -1,6 +1,5 @@
 import json
 import uuid
-from hmac import compare_digest
 from asyncio import Task, create_task, sleep
 from collections import Counter
 from datetime import datetime, timezone
@@ -518,20 +517,6 @@ def _admin_sort_key(item: dict[str, Any]) -> str:
     )
 
 
-def _require_admin_token(request: Request) -> None:
-    expected = (settings.ADMIN_TOKEN or "").strip()
-    if not expected:
-        raise HTTPException(status_code=403, detail="ADMIN_TOKEN is not configured.")
-
-    supplied = (
-        request.headers.get("X-Admin-Token")
-        or request.query_params.get("token")
-        or ""
-    ).strip()
-    if not supplied or not compare_digest(supplied, expected):
-        raise HTTPException(status_code=403, detail="Invalid admin token.")
-
-
 @app.get(
     "/api/v3/result/{task_id}",
     summary="v3 결과 조회",
@@ -606,11 +591,8 @@ async def admin_dashboard():
 
 @app.get("/admin/reports")
 async def admin_reports(
-    request: Request,
     limit: int = Query(default=500, ge=1, le=2000),
 ):
-    _require_admin_token(request)
-
     archived = list_archived_reports(limit=limit)
     by_task_id = {item["task_id"]: item for item in archived if item.get("task_id")}
 
@@ -636,8 +618,7 @@ async def admin_reports(
 
 
 @app.get("/admin/reports/{task_id}")
-async def admin_report_detail(request: Request, task_id: str):
-    _require_admin_token(request)
+async def admin_report_detail(task_id: str):
     if not _is_uuid(task_id):
         raise HTTPException(status_code=400, detail=f"유효하지 않은 task_id 형식입니다: {task_id}")
 
