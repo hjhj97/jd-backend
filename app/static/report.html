@@ -207,18 +207,50 @@
   .pattern-item strong { color: var(--blue); }
   .load-bar { width: 280px; max-width: 80vw; height: 6px; background: #e1e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
   .load-bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 4px; transition: width .5s ease; }
+
+  /* --- 로딩 스켈레톤 --- */
+  .sk { background: #e9eef4; border-radius: 8px; position: relative; overflow: hidden; }
+  .sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.65) 50%, transparent);
+    animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .skeleton-wrap { animation: skFade .4s ease; }
+  @keyframes skFade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 로딩 진행 배너 (헤더 영역에 오버레이) */
+  .load-banner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .load-banner .spinner { width: 30px; height: 30px; border-width: 3px; flex-shrink: 0; }
+  .load-banner-text { flex: 1; min-width: 200px; text-align: left; }
+  .load-banner-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .load-banner-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+  .load-banner-elapsed { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  /* 단계 스텝퍼 */
+  .stepper { display: flex; gap: 0; margin: 18px 0 4px; }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+  .step::before { content: ''; position: absolute; top: 11px; left: -50%; width: 100%; height: 2px; background: #d8e0ea; z-index: 0; }
+  .step:first-child::before { display: none; }
+  .step.done::before, .step.active::before { background: var(--blue); }
+  .step-dot { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #d8e0ea; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--text-muted); transition: all .35s ease; }
+  .step.done .step-dot { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .step.active .step-dot { border-color: var(--blue); color: var(--blue); box-shadow: 0 0 0 4px rgba(9,105,218,.15); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 4px rgba(9,105,218,.15); } 50% { box-shadow: 0 0 0 7px rgba(9,105,218,.05); } }
+  .step-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: center; transition: color .35s ease; }
+  .step.active .step-label, .step.done .step-label { color: var(--text); }
+
+  .sk-score-grid { display: grid; grid-template-columns: 220px 1fr; gap: 32px; align-items: center; }
+  .sk-bars { display: flex; flex-direction: column; gap: 18px; }
+  .sk-bar-row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; }
+  @media (max-width: 768px) {
+    .sk-score-grid { grid-template-columns: 1fr; gap: 24px; justify-items: center; }
+    .stepper { flex-wrap: wrap; gap: 12px; }
+    .step::before { display: none; }
+    .step { flex: 1 0 40%; }
+  }
 </style>
 </head>
 <body>
-<div id="app">
-  <div class="state-screen" id="loading">
-    <div class="spinner"></div>
-    <div class="state-title" id="loadingTitle">분석 진행 중…</div>
-    <div class="state-sub" id="loadingSub">특허를 분석하고 있습니다. 보통 5~7분 정도 소요됩니다.</div>
-    <div class="load-bar"><i id="loadBar"></i></div>
-    <div class="state-sub" id="loadingElapsed" style="font-size:12px;"></div>
-  </div>
-</div>
+<div id="app"></div>
 
 <script>
 const API_BASE = "/api/v1";
@@ -241,17 +273,18 @@ function fmtDate(s) {
   return t;
 }
 
-// 처리 단계 → 라벨 / 진행률(%) (UX용)
-// 실제 worker state: queued / PARSING / JDPATENT_SUBMIT / JDPATENT_PROCESSING
-const STAGE_LABEL = {
-  queued: "대기 중…",
-  PARSING: "특허 문서 파싱 중…",
-  JDPATENT_SUBMIT: "특허 분석 작업 등록 중…",
-  JDPATENT_PROCESSING: "특허 분석 중… (결과 대기)",
-};
-const STAGE_PCT = {
-  queued: 10, PARSING: 30, JDPATENT_SUBMIT: 50, JDPATENT_PROCESSING: 75,
-};
+// 처리 단계 정의 (UX용). 실제 worker state: queued / PARSING / JDPATENT_SUBMIT / JDPATENT_PROCESSING
+const STAGES = [
+  { key: "queued",              step: "대기",      label: "대기 중…",                  title: "분석 대기 중",         sub: "요청이 접수되었습니다. 곧 분석을 시작합니다.",   pct: 10 },
+  { key: "PARSING",             step: "문서 파싱", label: "특허 문서 파싱 중…",        title: "특허 문서를 읽는 중",  sub: "PDF에서 텍스트와 도면을 추출하고 있습니다.",     pct: 30 },
+  { key: "JDPATENT_SUBMIT",     step: "분석 등록", label: "특허 분석 작업 등록 중…",   title: "분석 작업 등록 중",    sub: "추출한 정보로 분석 작업을 준비하고 있습니다.",   pct: 50 },
+  { key: "JDPATENT_PROCESSING", step: "특허 분석", label: "특허 분석 중… (결과 대기)", title: "특허를 분석하는 중",   sub: "시장성·기술성·권리성과 유사 기업을 분석합니다.", pct: 78 },
+  { key: "completed",           step: "리포트",    label: "리포트 생성 중…",           title: "리포트를 완성하는 중", sub: "거의 다 됐습니다.",                              pct: 96 },
+];
+function stageIndex(key) {
+  const i = STAGES.findIndex(s => s.key === key);
+  return i < 0 ? 0 : i;
+}
 const FAILURE_MSG = {
   not_a_patent_document: "업로드한 문서가 특허 문서가 아닙니다.",
   runpod_pdf_too_large: "OCR 처리 가능한 파일 크기를 초과했습니다.",
@@ -261,14 +294,87 @@ const FAILURE_MSG = {
 
 const startedAt = Date.now();
 let elapsedTimer = null;
+let loadingMounted = false;
 function tickElapsed() {
   const el = document.getElementById("loadingElapsed");
   if (!el) return;
   const s = Math.floor((Date.now() - startedAt) / 1000);
-  el.textContent = "경과 시간 " + Math.floor(s / 60) + "분 " + (s % 60) + "초";
+  el.textContent = "경과 " + Math.floor(s / 60) + "분 " + (s % 60) + "초";
+}
+
+// 스켈레톤 한 칸
+function skel(w, h, extra) {
+  return '<div class="sk" style="width:' + w + ';height:' + h + 'px;' + (extra || "") + '"></div>';
+}
+// 로딩 화면(스켈레톤 + 진행 배너 + 스텝퍼)을 최초 1회만 그린다.
+function mountLoading() {
+  let h = '<div class="skeleton-wrap">';
+  // 진행 배너 + 스텝퍼 (헤더 카드)
+  h += '<header style="padding-bottom:28px;">' +
+    '<div class="load-banner">' +
+    '<div class="spinner"></div>' +
+    '<div class="load-banner-text">' +
+    '<div class="load-banner-title" id="loadingTitle">분석 진행 중…</div>' +
+    '<div class="load-banner-sub" id="loadingSub">특허를 분석하고 있습니다. 보통 5~7분 정도 소요됩니다.</div>' +
+    '</div>' +
+    '<div class="load-banner-elapsed" id="loadingElapsed"></div>' +
+    '</div>' +
+    '<div class="stepper" id="stepper">' +
+    STAGES.filter(s => s.key !== "completed").map((s, i) =>
+      '<div class="step" data-step="' + i + '"><div class="step-dot">' + (i + 1) +
+      '</div><div class="step-label">' + esc(s.step) + "</div></div>").join("") +
+    "</div>" +
+    '<div class="load-bar" style="width:100%;max-width:none;margin-top:18px;"><i id="loadBar"></i></div>' +
+    "</header>";
+
+  h += '<main>';
+  // 종합 점수 카드 스켈레톤 (도넛 + 막대)
+  h += '<div class="card">' + skel("160px", 13, "margin-bottom:24px;") +
+    '<div class="sk-score-grid"><div style="display:flex;flex-direction:column;align-items:center;gap:14px;">' +
+    skel("180px", 180, "border-radius:50%;") + skel("80px", 12) + "</div>" +
+    '<div class="sk-bars">' +
+    [0, 1, 2].map(() => '<div class="sk-bar-row">' + skel("100%", 14) + skel("100%", 12) + "</div>").join("") +
+    "</div></div></div>";
+  // 2단 카드 스켈레톤
+  h += '<div class="two-col">' +
+    skCard([18, 14, 14, 14, 14, 60]) +
+    skCard([18, 40, 40, 40]) +
+    "</div>";
+  // 세부 평가 카드 스켈레톤
+  h += '<div class="card">' + skel("120px", 13, "margin-bottom:18px;") +
+    '<div style="display:flex;gap:8px;margin-bottom:20px;">' +
+    skel("90px", 36) + skel("90px", 36) + skel("90px", 36) + "</div>" +
+    skel("100%", 90, "margin-bottom:16px;") +
+    skel("100%", 140) + "</div>";
+  h += "</main></div>";
+
+  document.getElementById("app").innerHTML = h;
+  loadingMounted = true;
+}
+function skCard(rows) {
+  let h = '<div class="card">';
+  rows.forEach((rh, i) => h += skel(i === 0 ? "140px" : (i % 3 === 0 ? "70%" : "100%"), rh, "margin-bottom:14px;"));
+  return h + "</div>";
+}
+// 단계 변화 시 배너/스텝퍼/진행바만 갱신 (스켈레톤 shimmer는 유지)
+function updateLoading(stageKey) {
+  const s = STAGES[stageIndex(stageKey)] || STAGES[0];
+  const idx = stageIndex(stageKey);
+  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  set("loadingTitle", s.title);
+  set("loadingSub", s.sub);
+  const bar = document.getElementById("loadBar");
+  if (bar) bar.style.width = s.pct + "%";
+  document.querySelectorAll("#stepper .step").forEach((el, i) => {
+    el.classList.toggle("done", i < idx);
+    el.classList.toggle("active", i === idx);
+    if (i < idx) el.querySelector(".step-dot").textContent = "✓";
+    else el.querySelector(".step-dot").textContent = i + 1;
+  });
 }
 
 async function load() {
+  if (!loadingMounted) mountLoading();
   if (!elapsedTimer) { tickElapsed(); elapsedTimer = setInterval(tickElapsed, 1000); }
   const taskId = getTaskId();
   let data;
@@ -297,11 +403,7 @@ async function load() {
   }
 
   // 진행 중 — 단계 표시 후 재폴링
-  const st = data.status || "queued";
-  const title = document.getElementById("loadingTitle");
-  const bar = document.getElementById("loadBar");
-  if (title) title.textContent = STAGE_LABEL[st] || "분석 진행 중…";
-  if (bar) bar.style.width = (STAGE_PCT[st] || 8) + "%";
+  updateLoading(data.status || "queued");
   setTimeout(load, 2500);
 }
 
