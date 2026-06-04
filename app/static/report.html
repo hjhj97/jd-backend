@@ -39,13 +39,22 @@
   .donut svg { transform: rotate(-90deg); width: 100%; height: 100%; }
   .donut-track { fill: none; stroke: #e8edf3; stroke-width: 16; }
   .donut-fill { fill: none; stroke: url(#donutGrad); stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset 1.1s cubic-bezier(.3,.8,.3,1); }
-  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .donut-score { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -2px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  /* hover 시 분할되는 평가 요인별 세그먼트 */
+  .donut-seg { fill: none; stroke-width: 16; cursor: pointer; opacity: 0; transition: opacity .3s ease, stroke-width .2s ease; }
+  .donut.split .donut-fill { opacity: 0; }
+  .donut.split .donut-seg { opacity: 1; }
+  .donut.split .donut-seg.dim { opacity: .25; }
+  .donut.split .donut-seg.focus { stroke-width: 19; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .donut-score { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -2px; background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; transition: color .2s; }
+  .donut-score.seg-val { -webkit-text-fill-color: currentColor; background: none; }
   .donut-max { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-  .donut-label { font-size: 12px; font-weight: 700; color: #334155; letter-spacing: .04em; }
+  .donut-label { font-size: 12px; font-weight: 700; color: #334155; letter-spacing: .04em; transition: color .2s; }
+  .donut-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; opacity: .75; }
 
   .score-bars { display: flex; flex-direction: column; gap: 18px; }
-  .score-bar-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: center; }
+  .score-bar-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: center; cursor: pointer; border-radius: 10px; padding: 4px 8px; margin: -4px -8px; transition: background .15s; }
+  .score-bar-row:hover { background: var(--surface2); }
   .score-bar-label { font-size: 13px; font-weight: 700; color: #334155; }
   .score-bar-track { height: 12px; background: #eaeef3; border-radius: 999px; overflow: hidden; }
   .score-bar-fill { height: 100%; border-radius: 999px; width: 0; transition: width 1.1s cubic-bezier(.3,.8,.3,1); }
@@ -440,12 +449,16 @@ function render(r) {
   html += "<main>";
 
   // ---- 종합 점수 (도넛 + 막대) ----
+  // 세 평가 요인 (도넛 세그먼트 / 막대 / 탭 연결에 공통 사용)
+  const factors = [
+    { cls: "market", label: "M&A 매력도", score: ma.ma_market_score, max: 50, color: "var(--yellow)", colorHex: "#9a6700", grad: "donutGradMarket", tab: "tab-market" },
+    { cls: "tech",   label: "기술성",     score: tech.tech_score,    max: 25, color: "var(--green)",  colorHex: "#1a7f37", grad: "donutGradTech",   tab: "tab-tech" },
+    { cls: "rights", label: "권리성",     score: rights.rights_score, max: 25, color: "var(--cyan)",  colorHex: "#0f766e", grad: "donutGradRights", tab: "tab-rights" },
+  ];
   html += '<div class="card"><div class="card-title">종합 평가 점수</div><div class="score-overview">';
-  html += donut(fin.final_score, 100);
+  html += donut(fin.final_score, 100, factors);
   html += '<div class="score-bars">';
-  html += scoreBar("market", "M&A 시장 매력도", ma.ma_market_score, 50);
-  html += scoreBar("tech", "기술성", tech.tech_score, 25);
-  html += scoreBar("rights", "권리성", rights.rights_score, 25);
+  factors.forEach(f => { html += scoreBar(f); });
   html += "</div></div>";
   if (fin.evaluation)
     html += '<div class="eval-text highlight">' + esc(fin.evaluation) + "</div>";
@@ -494,11 +507,11 @@ function render(r) {
   html += "</div></div>";
 
   // ---- 세부 평가 탭 ----
-  html += '<div class="card"><div class="card-title">세부 평가</div>';
+  html += '<div class="card" id="evalCard"><div class="card-title">세부 평가</div>';
   html += '<div class="tab-wrap">' +
-    '<button class="tab-btn active" onclick="switchTab(event,\'tab-market\')">M&A 시장</button>' +
-    '<button class="tab-btn" onclick="switchTab(event,\'tab-tech\')">기술성</button>' +
-    '<button class="tab-btn" onclick="switchTab(event,\'tab-rights\')">권리성</button></div>';
+    '<button class="tab-btn active" data-tab="tab-market" onclick="switchTab(event,\'tab-market\')">M&A 시장</button>' +
+    '<button class="tab-btn" data-tab="tab-tech" onclick="switchTab(event,\'tab-tech\')">기술성</button>' +
+    '<button class="tab-btn" data-tab="tab-rights" onclick="switchTab(event,\'tab-rights\')">권리성</button></div>';
   html += marketTabContent("tab-market", true, ma);
   html += tabContent("tab-tech", false, "기술성 평가", tech.tech_evaluation, tech.tech_reason, tech.tech_score, 25, "var(--green)");
   html += tabContent("tab-rights", false, "권리성 평가", rights.rights_evaluation, rights.rights_reason, rights.rights_score, 25, "var(--cyan)");
@@ -537,12 +550,37 @@ function render(r) {
 function metaItem(label, val) {
   return '<div class="meta-item">' + esc(label) + " <strong>" + esc(val) + "</strong></div>";
 }
-// 종합 점수 도넛 (SVG, 외부 라이브러리 없음). 게이지는 애니메이션을 위해 data-pct 사용.
-function donut(val, max) {
+// 종합 점수 도넛 (SVG, 외부 라이브러리 없음).
+// 평소: 종합점수 단일 그라데이션 링. hover: 평가 요인별(M&A/기술/권리) 세그먼트로 분할.
+// 세그먼트 호 길이 = 해당 요인 점수(점). 셋의 합이 곧 종합점수이므로 채움 정도가 일치한다.
+function donut(val, max, factors) {
   const has = val != null && val !== "";
   const pctNum = has ? Math.max(0, Math.min(1, Number(val) / max)) : 0;
   const r = 78, c = 2 * Math.PI * r;
-  return '<div class="donut-wrap"><div class="donut">' +
+
+  // 세그먼트: 각 요인 점수를 max(=100) 기준 호 길이로, 종합점수 시작점부터 이어 붙인다.
+  let segHtml = "", cursor = 0;
+  factors.forEach((f, i) => {
+    const sc = (f.score == null || f.score === "") ? 0 : Number(f.score);
+    const frac = Math.max(0, Math.min(1, sc / max));            // 전체(100) 대비 비중
+    const len = c * frac;
+    const gap = 1.5;                                            // 세그먼트 사이 미세 간격
+    const dash = Math.max(0, len - gap) + " " + (c - Math.max(0, len - gap));
+    const offset = -c * cursor;                                 // 시작 위치 (회전 누적)
+    segHtml += '<circle class="donut-seg" data-seg="' + i + '" cx="90" cy="90" r="' + r + '" ' +
+      'stroke="' + f.colorHex + '" stroke-dasharray="' + dash + '" stroke-dashoffset="' + offset.toFixed(1) + '" ' +
+      'onmouseenter="donutFocus(this,' + i + ')" onmouseleave="donutBlur(this)" ' +
+      'onclick="switchTabById(\'' + f.tab + '\')"></circle>';
+    cursor += frac;
+  });
+
+  const segData = factors.map(f => ({
+    label: f.label, score: (f.score == null ? "-" : f.score), max: f.max, color: f.colorHex
+  }));
+
+  return '<div class="donut-wrap"><div class="donut" id="scoreDonut" data-total="' + (has ? esc(val) : "-") +
+    '" data-segs=\'' + esc(JSON.stringify(segData)) + '\' ' +
+    'onmouseenter="this.classList.add(\'split\')" onmouseleave="donutReset()">' +
     '<svg viewBox="0 0 180 180">' +
     '<defs><linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="100%">' +
     '<stop offset="0%" stop-color="#0969da"/><stop offset="100%" stop-color="#8250df"/>' +
@@ -550,19 +588,23 @@ function donut(val, max) {
     '<circle class="donut-track" cx="90" cy="90" r="' + r + '"></circle>' +
     '<circle class="donut-fill" cx="90" cy="90" r="' + r + '" ' +
     'stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + c.toFixed(1) +
-    '" data-offset="' + (c * (1 - pctNum)).toFixed(1) + '"></circle></svg>' +
-    '<div class="donut-center"><div class="donut-score">' + (has ? esc(val) : "-") +
-    '</div><div class="donut-max">/ ' + max + "</div></div></div>" +
-    '<div class="donut-label">종합 점수</div></div>';
+    '" data-offset="' + (c * (1 - pctNum)).toFixed(1) + '"></circle>' +
+    segHtml + "</svg>" +
+    '<div class="donut-center" id="donutCenter">' +
+    '<div class="donut-score" id="donutScore">' + (has ? esc(val) : "-") +
+    '</div><div class="donut-max" id="donutMax">/ ' + max + "</div></div></div>" +
+    '<div class="donut-label" id="donutLabel">종합 점수</div>' +
+    '<div class="donut-hint">마우스를 올려 요인별 점수 보기</div></div>';
 }
-function scoreBar(cls, label, val, max) {
-  const has = val != null && val !== "";
-  const pctNum = has ? Math.max(0, Math.min(100, (Number(val) / max) * 100)) : 0;
-  return '<div class="score-bar-row ' + cls + '">' +
-    '<div class="score-bar-label">' + esc(label) + "</div>" +
+function scoreBar(f) {
+  const has = f.score != null && f.score !== "";
+  const pctNum = has ? Math.max(0, Math.min(100, (Number(f.score) / f.max) * 100)) : 0;
+  return '<div class="score-bar-row ' + f.cls + '" onclick="switchTabById(\'' + f.tab + '\')" ' +
+    'title="' + esc(f.label) + ' 세부 평가 보기">' +
+    '<div class="score-bar-label">' + esc(f.label) + "</div>" +
     '<div class="score-bar-track"><div class="score-bar-fill" data-pct="' + pctNum.toFixed(1) + '"></div></div>' +
-    '<div class="score-bar-val">' + (has ? esc(val) : "-") +
-    '<span class="denom"> / ' + max + "</span></div></div>";
+    '<div class="score-bar-val">' + (has ? esc(f.score) : "-") +
+    '<span class="denom"> / ' + f.max + "</span></div></div>";
 }
 function row(label, val) {
   if (val == null || val === "") return "";
@@ -667,7 +709,7 @@ function marketTabContent(id, active, ma) {
     { label: "4관점 합계", score: sum, max: 50 },
     { label: "정량 앵커", score: ma.ma_anchor_score, max: 50, subtle: true },
   ]);
-  const headline = evalHeadline("M&A 시장 매력도", ma.ma_market_score, 50, "var(--yellow)", subChips);
+  const headline = evalHeadline("M&A 매력도", ma.ma_market_score, 50, "var(--yellow)", subChips);
   const gridClass = pairCount >= 4 ? "eval-pair-list market-grid" : "eval-pair-list";
 
   return '<div id="' + id + '" class="tab-content' + (active ? " active" : "") + '">' +
@@ -708,15 +750,62 @@ function companyCard(title, companies) {
 }
 
 // ---- sample.html과 동일한 인터랙션 ----
+// 탭 ID로 활성화 (버튼 클릭/도넛·막대 클릭 공용)
+function activateTab(tabId) {
+  const tab = document.getElementById(tabId);
+  if (!tab) return;
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  tab.classList.add("active");
+  document.querySelectorAll(".tab-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === tabId));
+  animateCharts(tab);
+}
 function switchTab(event, tabId) {
   event.preventDefault();
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-  event.target.classList.add("active");
-  const tab = document.getElementById(tabId);
-  tab.classList.add("active");
-  // 탭이 보일 때 게이지/미니바 애니메이션 재생
-  animateCharts(tab);
+  activateTab(tabId);
+}
+// 도넛/막대 클릭 → 세부 평가 해당 탭 활성화 + 스크롤 이동
+function switchTabById(tabId) {
+  activateTab(tabId);
+  const card = document.getElementById("evalCard");
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// 도넛 hover: 분할 모드 진입, 특정 세그먼트 강조 + 중앙에 해당 요인 점수 표시
+function donutFocus(el, i) {
+  const donut = document.getElementById("scoreDonut");
+  if (!donut) return;
+  donut.classList.add("split");
+  donut.querySelectorAll(".donut-seg").forEach(s => {
+    s.classList.toggle("focus", s === el);
+    s.classList.toggle("dim", s !== el);
+  });
+  let segs; try { segs = JSON.parse(donut.dataset.segs); } catch (e) { return; }
+  const f = segs[i]; if (!f) return;
+  const score = document.getElementById("donutScore");
+  const max = document.getElementById("donutMax");
+  const label = document.getElementById("donutLabel");
+  score.textContent = f.score; score.classList.add("seg-val"); score.style.color = f.color;
+  max.textContent = "/ " + f.max;
+  label.textContent = f.label; label.style.color = f.color;
+}
+function donutBlur(el) {
+  const donut = document.getElementById("scoreDonut");
+  if (!donut) return;
+  donut.querySelectorAll(".donut-seg").forEach(s => s.classList.remove("focus", "dim"));
+}
+// 도넛 영역을 벗어나면 종합 점수로 복원
+function donutReset() {
+  const donut = document.getElementById("scoreDonut");
+  if (!donut) return;
+  donut.classList.remove("split");
+  const score = document.getElementById("donutScore");
+  const max = document.getElementById("donutMax");
+  const label = document.getElementById("donutLabel");
+  if (!score || !donut.dataset.total) return;
+  score.textContent = donut.dataset.total; score.classList.remove("seg-val"); score.style.color = "";
+  max.textContent = "/ 100";
+  label.textContent = "종합 점수"; label.style.color = "";
 }
 function toggleCompany(event, el) { if (event) event.stopPropagation(); el.classList.toggle("open"); }
 function togglePatent(event, el) { if (event) event.stopPropagation(); el.classList.toggle("open"); }
