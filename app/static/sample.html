@@ -72,6 +72,19 @@
   .tab-btn.active { background: var(--surface); color: var(--text); }
   .tab-content { display: none; }
   .tab-content.active { display: block; animation: tabFade .24s ease; }
+  .eval-pair-list { display: grid; gap: 16px; }
+  .eval-pair-list.market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .eval-score-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .eval-pair { background: #fbfcfe; border: 1px solid var(--border); border-left: 4px solid var(--blue); border-radius: 8px; padding: 22px 24px; }
+  .market-grid .eval-pair { height: 100%; }
+  .eval-pair-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .eval-pair-title { font-size: 13px; font-weight: 800; color: var(--text); }
+  .score-chip { display: inline-flex; align-items: baseline; gap: 3px; flex-shrink: 0; border: 1px solid #c7d7ee; background: #eef5ff; color: #0757b8; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; line-height: 1; white-space: nowrap; }
+  .score-chip .denom { color: #64748b; font-size: 11px; font-weight: 700; }
+  .score-chip.subtle { background: #f8fafc; border-color: var(--border); color: #334155; }
+  .eval-pair-body { color: var(--text); font-size: 15px; line-height: 2; white-space: pre-line; }
+  .eval-pair-reason { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e5eaf0; color: #7b8794; font-size: 12px; line-height: 1.85; white-space: pre-line; }
+  .eval-pair-reason::before { content: "산출 근거"; display: block; margin-bottom: 8px; color: #94a3b8; font-size: 11px; font-weight: 800; letter-spacing: .05em; }
 
   .abstract-text { font-size: 13px; color: var(--text-muted); line-height: 1.9; background: var(--surface2); padding: 18px 20px; border-radius: 8px; border-left: 3px solid var(--border); white-space: pre-line; }
   .reason-block { background: var(--surface2); border-radius: 8px; padding: 16px 18px; margin-top: 10px; font-size: 12px; color: var(--text-muted); line-height: 1.9; white-space: pre-line; }
@@ -134,6 +147,7 @@
     header { padding: 28px 20px; }
     .score-grid { grid-template-columns: 1fr 1fr; }
     .two-col { grid-template-columns: 1fr; }
+    .eval-pair-list.market-grid { grid-template-columns: 1fr; }
     .patent-item-head { align-items: flex-start; }
   }
 </style>
@@ -204,20 +218,20 @@
       <button class="tab-btn" onclick="switchTab(event, 'tab-tech')">기술성</button>
       <button class="tab-btn" onclick="switchTab(event, 'tab-rights')">권리성</button>
     </div>
-    <div id="tab-market" class="tab-content active"><div class="eval-text" style="color:var(--text);">이 기술이 속한 바이오 분야는 최근 몇 년간 M&amp;A 시장에서 성장률이 낮고, 회복세도 뚜렷하지는 않습니다. 다만, 전체 인수 비중이 높아 기술이나 시장을 빠르게 확보하려는 전략적 인수는 활발하게 이루어지고 있습니다. 국경 간 거래 비중이 35% 수준으로 글로벌 확장성은 있으나, 한국 기준으로는 기술 및 자본의 유출이 더 많은 구조입니다. 해당 특허는 첨단 바이오기술(High-Tech)로 분류되어 기술적 파급력은 인정받을 수 있습니다. 종합적으로 볼 때, 시장의 성장성은 제한적이지만 전략적 인수와 기술적 매력도는 중간 수준으로 평가됩니다.</div><div class="reason-block">최근 성장률 (recent_growth) : (0.008) -&gt; (최근 성장률이 매우 낮아 단기적 성장성은 제한적임을 시사함.)
+    <div id="tab-market" class="tab-content active"><div class="eval-score-summary"><span class="score-chip">총점 27<span class="denom">/ 50</span></span></div><div class="eval-pair-list"><div class="eval-pair"><div class="eval-pair-head"><div class="eval-pair-title">M&amp;A 시장 평가</div><span class="score-chip">점수 27<span class="denom">/ 50</span></span></div><div class="eval-pair-body">이 기술이 속한 바이오 분야는 최근 몇 년간 M&amp;A 시장에서 성장률이 낮고, 회복세도 뚜렷하지는 않습니다. 다만, 전체 인수 비중이 높아 기술이나 시장을 빠르게 확보하려는 전략적 인수는 활발하게 이루어지고 있습니다. 국경 간 거래 비중이 35% 수준으로 글로벌 확장성은 있으나, 한국 기준으로는 기술 및 자본의 유출이 더 많은 구조입니다. 해당 특허는 첨단 바이오기술(High-Tech)로 분류되어 기술적 파급력은 인정받을 수 있습니다. 종합적으로 볼 때, 시장의 성장성은 제한적이지만 전략적 인수와 기술적 매력도는 중간 수준으로 평가됩니다.</div><div class="eval-pair-reason">최근 성장률 (recent_growth) : (0.008) -&gt; (최근 성장률이 매우 낮아 단기적 성장성은 제한적임을 시사함.)
 회복 비율 (recovery_ratio) : (1.065) -&gt; (과거 저점 대비 회복세가 있으나, 큰 폭의 반등은 아님.)
 최근 추세 기울기 (recent_trend_slope) : (12.0) -&gt; (연간 추세 기울기가 양수로, 완만하나마 상승 흐름이 있음을 의미함.)
 분야 M&amp;A 동향 종합 점수 (final_score) : (0.43) -&gt; (성장성과 회복성을 종합한 점수가 중간 이하로, 시장 매력도가 높지 않음을 시사함.)
 최근 연도 M&amp;A 건수 및 내부 인수 비중 : (2024년: A=386, B_ratio=0.181 / 2025년: A=341, B_ratio=0.147) -&gt; (최근 2년간 M&amp;A 건수는 유지되고 있으나, 동종 산업 내부 인수 비중은 낮은 편임.)
 국경 간 거래 비중 및 방향성 : (cross_border_ratio=0.358, direction=outbound) -&gt; (국경 간 거래 비중이 35.8%로 개방성은 있으나, 한국에서의 기술·자본 유출이 더 많음.)
 인수 전략 유형별 건수 : (stake_single_target_cnt=567, stake_multi_target_cnt=112, full_acquisition_cnt=1435) -&gt; (전체 인수(Full Acquisition)가 다수를 차지해 시장·기술 확보 목적의 인수가 활발함.)
-High-Tech 해당 여부 : (matched_hightech: [&quot;Other Biotechnology&quot;], is_hightech: 1) -&gt; (해당 특허는 &#x27;Other Biotechnology&#x27;에 해당하는 High-Tech 기술로 분류됨.)</div></div>
-    <div id="tab-tech" class="tab-content"><div class="eval-text" style="color:var(--text);">본 특허는 콩 유래 PsaC 단백질을 코딩하는 유전자를 이용해 식물체의 콩 모자이크 바이러스 저항성을 조절하는 기술로, 청구항에서 구체적인 아미노산 서열과 이를 포함한 벡터, 형질전환 방법, 조성물까지 상세히 제시하고 있습니다. 각 청구항은 벡터의 구성, 형질전환 및 재분화 과정, 그리고 조성물의 용도까지 단계별로 구체적으로 기술되어 있어 기술적 완성도가 높아 보입니다. 특히 동일 분야에서 흔히 사용되는 병 저항성 유전자와 달리, PsaC 단백질을 활용한 점이 차별화 포인트로 읽히며, 기존 선행기술 대비 새로운 접근임을 시사합니다. 인용문헌 수가 매우 적어, 선행기술에 대한 부담이 낮고 신규성·진보성 측면에서 유리한 위치에 있습니다. 기술 설명은 용어의 일관성과 논리적 전개가 명확하게 유지되어 신뢰도가 높게 느껴집니다. 다만, IPC 코드 수가 평균보다 다소 적어 적용 분야의 확장성은 제한적일 수 있으나, 특정 응용 분야에 집중된 강점으로도 해석될 수 있습니다. 전반적으로 구체성, 차별성, 권리범위 측면에서 높은 기술성을 갖춘 특허로 평가됩니다.</div><div class="reason-block">IPC 코드 개수 : (IPC 개수: 3, 산업 평균: 4.15) -&gt; (IPC 코드가 평균보다 다소 적어 적용 범위의 폭은 제한적일 수 있으나, 특정 기술 분야에 집중된 특성으로 해석될 수 있음.)
+High-Tech 해당 여부 : (matched_hightech: [&quot;Other Biotechnology&quot;], is_hightech: 1) -&gt; (해당 특허는 &#x27;Other Biotechnology&#x27;에 해당하는 High-Tech 기술로 분류됨.)</div></div></div></div>
+    <div id="tab-tech" class="tab-content"><div class="eval-score-summary"><span class="score-chip">총점 19<span class="denom">/ 25</span></span></div><div class="eval-pair-list"><div class="eval-pair"><div class="eval-pair-head"><div class="eval-pair-title">기술성 평가</div><span class="score-chip">점수 19<span class="denom">/ 25</span></span></div><div class="eval-pair-body">본 특허는 콩 유래 PsaC 단백질을 코딩하는 유전자를 이용해 식물체의 콩 모자이크 바이러스 저항성을 조절하는 기술로, 청구항에서 구체적인 아미노산 서열과 이를 포함한 벡터, 형질전환 방법, 조성물까지 상세히 제시하고 있습니다. 각 청구항은 벡터의 구성, 형질전환 및 재분화 과정, 그리고 조성물의 용도까지 단계별로 구체적으로 기술되어 있어 기술적 완성도가 높아 보입니다. 특히 동일 분야에서 흔히 사용되는 병 저항성 유전자와 달리, PsaC 단백질을 활용한 점이 차별화 포인트로 읽히며, 기존 선행기술 대비 새로운 접근임을 시사합니다. 인용문헌 수가 매우 적어, 선행기술에 대한 부담이 낮고 신규성·진보성 측면에서 유리한 위치에 있습니다. 기술 설명은 용어의 일관성과 논리적 전개가 명확하게 유지되어 신뢰도가 높게 느껴집니다. 다만, IPC 코드 수가 평균보다 다소 적어 적용 분야의 확장성은 제한적일 수 있으나, 특정 응용 분야에 집중된 강점으로도 해석될 수 있습니다. 전반적으로 구체성, 차별성, 권리범위 측면에서 높은 기술성을 갖춘 특허로 평가됩니다.</div><div class="eval-pair-reason">IPC 코드 개수 : (IPC 개수: 3, 산업 평균: 4.15) -&gt; (IPC 코드가 평균보다 다소 적어 적용 범위의 폭은 제한적일 수 있으나, 특정 기술 분야에 집중된 특성으로 해석될 수 있음.)
 인용문헌 수 : (인용문헌 수: 2, 산업 평균: 10) -&gt; (인용문헌 수가 매우 적어 신규성과 진보성 측면에서 선행기술 부담이 낮게 평가됨.)
-독립항·청구 구조 : (독립항 3개(청구항 1, 3, 7), 각 항은 벡터, 제조방법, 조성물로 구성) -&gt; (청구항이 벡터, 제조방법, 조성물로 다양하게 분포되어 있어 기술적 완성도가 높고, 권리 범위도 넓게 확보된 것으로 보임.)</div></div>
-    <div id="tab-rights" class="tab-content"><div class="eval-text" style="color:var(--text);">청구항 구조는 독립항과 계열이 적절히 분산되어 있어, 권리 범위의 다각적 확보를 의도한 설계로 보입니다. 전체 청구항 수는 평균 수준으로, 기본적인 권리망은 갖추고 있습니다. 다만, 독립항의 문구가 상당히 길고 구체적이어서, 권리 범위가 명확해지는 반면 경쟁사 입장에서 회피 설계가 가능할 여지도 있습니다. 청구항 유형이 방법 및 조성물로만 구성되어 있어, 시스템이나 장치 등 다른 유형의 권리 확보에는 한계가 있습니다. 독립항에 특정 아미노산 서열 및 유전자 정보가 반복적으로 언급되어, 신규성·진보성에는 유리하나 권리 범위가 자연스럽게 좁아질 수 있습니다. 실무적으로는 명확한 적용 대상을 확보하였으나, 범위 확장성이나 유연성 측면에서는 다소 아쉬움이 남습니다. 전반적으로 권리 설계가 안정적이지만, 폭넓은 보호에는 제한이 있어 보입니다.</div><div class="reason-block">전체 청구항 수 : (7) -&gt; (전체 청구항 수가 평균에 부합하여 권리 설계의 기본적인 충실성을 보여줍니다.)
+독립항·청구 구조 : (독립항 3개(청구항 1, 3, 7), 각 항은 벡터, 제조방법, 조성물로 구성) -&gt; (청구항이 벡터, 제조방법, 조성물로 다양하게 분포되어 있어 기술적 완성도가 높고, 권리 범위도 넓게 확보된 것으로 보임.)</div></div></div></div>
+    <div id="tab-rights" class="tab-content"><div class="eval-score-summary"><span class="score-chip">총점 15<span class="denom">/ 25</span></span></div><div class="eval-pair-list"><div class="eval-pair"><div class="eval-pair-head"><div class="eval-pair-title">권리성 평가</div><span class="score-chip">점수 15<span class="denom">/ 25</span></span></div><div class="eval-pair-body">청구항 구조는 독립항과 계열이 적절히 분산되어 있어, 권리 범위의 다각적 확보를 의도한 설계로 보입니다. 전체 청구항 수는 평균 수준으로, 기본적인 권리망은 갖추고 있습니다. 다만, 독립항의 문구가 상당히 길고 구체적이어서, 권리 범위가 명확해지는 반면 경쟁사 입장에서 회피 설계가 가능할 여지도 있습니다. 청구항 유형이 방법 및 조성물로만 구성되어 있어, 시스템이나 장치 등 다른 유형의 권리 확보에는 한계가 있습니다. 독립항에 특정 아미노산 서열 및 유전자 정보가 반복적으로 언급되어, 신규성·진보성에는 유리하나 권리 범위가 자연스럽게 좁아질 수 있습니다. 실무적으로는 명확한 적용 대상을 확보하였으나, 범위 확장성이나 유연성 측면에서는 다소 아쉬움이 남습니다. 전반적으로 권리 설계가 안정적이지만, 폭넓은 보호에는 제한이 있어 보입니다.</div><div class="eval-pair-reason">전체 청구항 수 : (7) -&gt; (전체 청구항 수가 평균에 부합하여 권리 설계의 기본적인 충실성을 보여줍니다.)
 독립항·종속항·계열 : (독립항 3, 종속항 4, 계열 2) -&gt; (독립항과 계열이 다수로 구성되어 다양한 측면에서 권리 범위를 확보하려는 시도가 엿보입니다.)
-독립항 분량(단어 수) : (108) -&gt; (독립항의 문구가 다소 긴 편으로, 권리 범위가 구체화되어 있으나 그만큼 회피 가능성도 존재할 수 있습니다.)</div></div>
+독립항 분량(단어 수) : (108) -&gt; (독립항의 문구가 다소 긴 편으로, 권리 범위가 구체화되어 있으나 그만큼 회피 가능성도 존재할 수 있습니다.)</div></div></div></div>
   </div>
 
   <div class="two-col">

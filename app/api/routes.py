@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from loguru import logger
 
 from app.services.s3_service import upload_pdf
+from app.services.report_result_store import get_archived_report
 from app.services.temp_pdf_service import resolve_temp_pdf_path, save_temp_pdf
 from app.worker.celery_app import celery_app
 from app.worker.tasks import process_patent
@@ -413,18 +414,29 @@ async def get_result(task_id: str):
         )
 
     task = AsyncResult(task_id, app=celery_app)
+    archived = get_archived_report(task_id)
 
     # PENDING은 대기열 혼잡 상황에서 정상 task도 길게 유지될 수 있으므로
     # 404로 판정하지 않고 queued로 응답한다.
     if task.state == "PENDING":
+        if archived and isinstance(archived.get("result"), dict):
+            return {
+                "success": True,
+                "task_id": task_id,
+                "status": "completed",
+                "result": archived["result"],
+                "archived": True,
+            }
         return {"success": True, "task_id": task_id, "status": "queued"}
 
     elif task.state == "SUCCESS":
+        result = archived["result"] if archived and isinstance(archived.get("result"), dict) else task.result
         return {
             "success": True,
             "task_id": task_id,
             "status": "completed",
-            "result": task.result,
+            "result": result,
+            "archived": bool(archived),
         }
 
     elif task.state == "FAILURE":

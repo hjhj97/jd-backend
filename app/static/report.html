@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>특허 분석 리포트</title>
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #f0f0f0;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --blue: #0969da;
+    --green: #1a7f37;
+    --yellow: #9a6700;
+    --purple: #8250df;
+    --cyan: #0f766e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; letter-spacing: 0; }
+  header { background: linear-gradient(135deg, #fbfdff 0%, #eef4ff 100%); border-bottom: 1px solid var(--border); padding: 40px 48px 32px; opacity: 0; transform: translateY(-8px); animation: headerIn .55s cubic-bezier(.2,.75,.2,1) forwards; }
+  .badge { display: inline-block; background: #e7f0ff; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
+  header h1 { font-size: 22px; font-weight: 700; line-height: 1.4; max-width: 800px; margin-bottom: 16px; }
+  .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+  .meta-item { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-muted); }
+  .meta-item strong { color: var(--text); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 40px 48px; display: grid; gap: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; box-shadow: 0 1px 2px rgba(31,35,40,.04); }
+  .card-title { font-size: 13px; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 20px; }
+
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .score-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 24px 20px; text-align: center; position: relative; overflow: hidden; }
+  .score-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .score-item.total::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+  .score-item.market::before { background: linear-gradient(90deg, var(--yellow), #bf8700); }
+  .score-item.tech::before { background: linear-gradient(90deg, var(--green), #2da44e); }
+  .score-item.rights::before { background: linear-gradient(90deg, var(--cyan), #0d9488); }
+  .score-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px; }
+  .score-number { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+  .score-item.total .score-number { background: linear-gradient(135deg, var(--blue), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .score-item.market .score-number { color: var(--yellow); }
+  .score-item.tech .score-number { color: var(--green); }
+  .score-item.rights .score-number { color: var(--cyan); }
+  .score-max { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .eval-text { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-top: 12px; white-space: pre-line; }
+  .eval-text.highlight { color: var(--text); background: var(--surface2); border-left: 3px solid var(--blue); padding: 14px 18px; border-radius: 0 8px 8px 0; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  .naics-primary { background: var(--surface2); border: 1px solid var(--blue); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+  .naics-code { font-size: 28px; font-weight: 800; color: var(--blue); letter-spacing: -1px; }
+  .naics-title { font-size: 15px; font-weight: 600; margin: 6px 0 4px; }
+  .naics-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  .ipc-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ipc-chip { background: #e7f0ff; border: 1px solid #b6d0f7; border-radius: 8px; padding: 10px 14px; }
+  .ipc-chip .code { font-size: 13px; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+  .ipc-chip .desc { font-size: 11px; color: var(--text-muted); }
+
+  .patent-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .patent-table td { padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .patent-table td:first-child { color: var(--text-muted); width: 140px; }
+  .patent-table tr:last-child td { border-bottom: none; }
+
+  .tab-wrap { display: flex; gap: 4px; margin-bottom: 18px; background: #eef2f7; border: 1px solid #d8e0ea; border-radius: 8px; padding: 4px; width: fit-content; }
+  .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 650; padding: 8px 18px; border-radius: 6px; cursor: pointer; }
+  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,.55); }
+  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(31,35,40,.08); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tabFade .24s ease; }
+  .eval-pair-list { display: grid; gap: 16px; }
+  .eval-pair-list.market-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .eval-score-summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .eval-pair { background: #fbfcfe; border: 1px solid #d8e0ea; border-left: 4px solid var(--blue); border-radius: 8px; padding: 22px 24px; }
+  .market-grid .eval-pair { height: 100%; }
+  .eval-pair-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .eval-pair-title { font-size: 13px; font-weight: 800; color: #1f2937; }
+  .score-chip { display: inline-flex; align-items: baseline; gap: 3px; flex-shrink: 0; border: 1px solid #c7d7ee; background: #eef5ff; color: #0757b8; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; line-height: 1; white-space: nowrap; }
+  .score-chip .denom { color: #64748b; font-size: 11px; font-weight: 700; }
+  .score-chip.subtle { background: #f8fafc; border-color: #d8e0ea; color: #334155; }
+  .eval-pair-body { color: var(--text); font-size: 15px; line-height: 2; white-space: pre-line; }
+  .eval-pair-reason { margin-top: 18px; padding-top: 14px; border-top: 1px solid #e5eaf0; color: #7b8794; font-size: 12px; line-height: 1.85; white-space: pre-line; }
+  .eval-pair-reason::before { content: "산출 근거"; display: block; margin-bottom: 8px; color: #94a3b8; font-size: 11px; font-weight: 800; letter-spacing: .05em; }
+
+  .abstract-text { font-size: 13px; color: var(--text-muted); line-height: 1.9; background: var(--surface2); padding: 18px 20px; border-radius: 8px; border-left: 3px solid var(--border); white-space: pre-line; }
+  .reason-block { background: #f8fafc; border: 1px solid #d8e0ea; border-radius: 8px; padding: 18px 20px; margin-top: 10px; font-size: 13px; color: #4b5563; line-height: 1.85; white-space: pre-line; }
+
+  .company-list { display: flex; flex-direction: column; gap: 14px; }
+  .company-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: border-color .2s; }
+  .company-card:hover { border-color: #9ec4f4; }
+  .company-header { display: flex; align-items: center; gap: 14px; padding: 18px 20px; cursor: pointer; user-select: none; }
+  .company-rank { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 13px; font-weight: 800; flex-shrink: 0; background: linear-gradient(135deg, #e7f0ff, #f2ecff); color: var(--blue); border: 1px solid #b6d0f7; }
+  .company-info { flex: 1; min-width: 0; }
+  .company-name { font-size: 15px; font-weight: 700; }
+  .company-meta { display: flex; gap: 16px; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+  .company-meta .val { color: var(--text); font-weight: 600; }
+  .company-chevron { font-size: 14px; color: var(--text-muted); transition: transform .25s; flex-shrink: 0; }
+  .company-card.open .company-chevron { transform: rotate(180deg); }
+  .company-patents { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.4,0,.2,1); }
+  .company-card.open .company-patents { max-height: 3000px; }
+  .company-patents-inner { padding: 0 20px 18px; border-top: 1px solid var(--border); }
+
+  .patent-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 10px; font-size: 13px; cursor: pointer; transition: border-color .2s; }
+  .patent-item:hover { border-color: #9ec4f4; }
+  .patent-item-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .patent-item-title-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .patent-item-title-text { font-weight: 600; }
+  .country-pill { font-size: 11px; font-weight: 700; background: #e7f0ff; color: #0969da; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+  .patent-item-chevron { font-size: 12px; color: var(--text-muted); transition: transform .25s; flex-shrink: 0; }
+  .patent-item.open .patent-item-chevron { transform: rotate(180deg); }
+  .patent-item-ipc { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .ipc-tag { font-size: 10px; font-weight: 600; color: var(--blue); background: #eef5ff; border: 1px solid #bfd4f4; border-radius: 4px; padding: 2px 7px; }
+  .patent-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+  .patent-item-abstract { font-size: 11px; color: var(--text-muted); line-height: 1.7; margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .patent-item.open .patent-item-abstract { display: block; -webkit-line-clamp: initial; -webkit-box-orient: initial; overflow: visible; }
+
+  .pattern-list { display: grid; gap: 10px; }
+  .pattern-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .pattern-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .pattern-reason { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.7; }
+  .muted { font-size: 13px; color: var(--text-muted); }
+  .reveal-item { opacity: 0; transform: translateY(14px); animation: sectionIn .55s cubic-bezier(.2,.75,.2,1) forwards; }
+
+  @keyframes headerIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes sectionIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes tabFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 768px) {
+    main { padding: 24px 20px; }
+    header { padding: 28px 20px; }
+    .score-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .tab-wrap { width: 100%; overflow-x: auto; }
+    .tab-btn { flex: 1 0 auto; padding: 8px 14px; }
+    .eval-pair-list.market-grid { grid-template-columns: 1fr; }
+    .eval-score-summary { gap: 6px; }
+    .eval-pair { padding: 18px 20px; }
+    .eval-pair-head { align-items: flex-start; flex-direction: column; }
+    .eval-pair-body { font-size: 14px; line-height: 1.9; }
+    .patent-item-head { align-items: flex-start; }
+  }
+
+  /* --- 동적 상태(로딩/에러) --- */
+  .state-screen { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 40px; }
+  .spinner { width: 38px; height: 38px; border: 4px solid #c8d4e3; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .state-title { font-size: 18px; font-weight: 700; }
+  .state-sub { font-size: 14px; color: var(--text-muted); }
+  .state-screen.error .state-title { color: #cf222e; }
+  .back-link { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--blue); text-decoration: none; border: 1px solid var(--border); padding: 8px 18px; border-radius: 8px; }
+  .back-link:hover { background: var(--surface2); }
+  .pattern-item strong { color: var(--blue); }
+  .load-bar { width: 280px; max-width: 80vw; height: 6px; background: #e1e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .load-bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 4px; transition: width .5s ease; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="state-screen" id="loading">
+    <div class="spinner"></div>
+    <div class="state-title" id="loadingTitle">분석 진행 중…</div>
+    <div class="state-sub" id="loadingSub">특허를 분석하고 있습니다. 보통 5~7분 정도 소요됩니다.</div>
+    <div class="load-bar"><i id="loadBar"></i></div>
+    <div class="state-sub" id="loadingElapsed" style="font-size:12px;"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "/api/v1";
+
+// URL: /result/{task_id}
+function getTaskId() {
+  const parts = window.location.pathname.split("/").filter(Boolean);
+  return parts[parts.length - 1];
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function pct(x) { return (Number(x) * 100).toFixed(2) + "%"; }
+function fmtDate(s) {
+  if (!s) return "-";
+  const t = String(s);
+  if (/^\d{8}$/.test(t)) return t.slice(0, 4) + "-" + t.slice(4, 6) + "-" + t.slice(6, 8);
+  return t;
+}
+
+// 처리 단계 → 라벨 / 진행률(%) (UX용)
+// 실제 worker state: queued / PARSING / JDPATENT_SUBMIT / JDPATENT_PROCESSING
+const STAGE_LABEL = {
+  queued: "대기 중…",
+  PARSING: "특허 문서 파싱 중…",
+  JDPATENT_SUBMIT: "특허 분석 작업 등록 중…",
+  JDPATENT_PROCESSING: "특허 분석 중… (결과 대기)",
+};
+const STAGE_PCT = {
+  queued: 10, PARSING: 30, JDPATENT_SUBMIT: 50, JDPATENT_PROCESSING: 75,
+};
+const FAILURE_MSG = {
+  not_a_patent_document: "업로드한 문서가 특허 문서가 아닙니다.",
+  runpod_pdf_too_large: "OCR 처리 가능한 파일 크기를 초과했습니다.",
+  runpod_timeout: "OCR 처리 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+  jdpatent_timeout: "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
+};
+
+const startedAt = Date.now();
+let elapsedTimer = null;
+function tickElapsed() {
+  const el = document.getElementById("loadingElapsed");
+  if (!el) return;
+  const s = Math.floor((Date.now() - startedAt) / 1000);
+  el.textContent = "경과 시간 " + Math.floor(s / 60) + "분 " + (s % 60) + "초";
+}
+
+async function load() {
+  if (!elapsedTimer) { tickElapsed(); elapsedTimer = setInterval(tickElapsed, 1000); }
+  const taskId = getTaskId();
+  let data;
+  try {
+    const res = await fetch(API_BASE + "/result/" + encodeURIComponent(taskId));
+    data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.msg || ("HTTP " + res.status));
+  } catch (err) {
+    // 네트워크 일시 오류는 멈추지 않고 재시도
+    setTimeout(load, 2500);
+    return;
+  }
+
+  if (data.status === "completed" && data.result) {
+    clearInterval(elapsedTimer);
+    render(data.result);
+    return;
+  }
+
+  // 실패는 항상 success:false 로 온다 (failed / not_a_patent_document / *_timeout 등).
+  // 그 외 success !== false 인 모든 상태(PARSING, JDPATENT_PROCESSING 등)는 "진행 중"이다.
+  if (data.success === false) {
+    clearInterval(elapsedTimer);
+    const msg = FAILURE_MSG[data.status] || data.msg || ("상태: " + (data.status || "알 수 없음"));
+    return renderError("분석에 실패했습니다.", msg);
+  }
+
+  // 진행 중 — 단계 표시 후 재폴링
+  const st = data.status || "queued";
+  const title = document.getElementById("loadingTitle");
+  const bar = document.getElementById("loadBar");
+  if (title) title.textContent = STAGE_LABEL[st] || "분석 진행 중…";
+  if (bar) bar.style.width = (STAGE_PCT[st] || 8) + "%";
+  setTimeout(load, 2500);
+}
+
+function renderError(title, sub) {
+  document.getElementById("app").innerHTML =
+    '<div class="state-screen error"><div class="state-title">' + esc(title) + "</div>" +
+    '<div class="state-sub">' + esc(sub || "") + "</div>" +
+    '<a class="back-link" href="/sample">← 새 분석 시작</a></div>';
+}
+
+function render(r) {
+  const basic = r.basic_info || {};
+  const patent = basic.patent || {};
+  const naics = r.naics || {};
+  const evalv = r.evaluation || {};
+  const fin = (evalv.final_result) || {};
+  const ma = evalv.ma_market_evaluation || {};
+  const tech = evalv.tech_evaluation || {};
+  const rights = evalv.rights_evaluation || {};
+  const ipcDescs = r.ipc_descriptions || [];
+  const rec = r.recommend_companies || {};
+  const patterns = (r.ma_patterns && r.ma_patterns.patterns) || [];
+
+  const naicsPrimary = naics.primary || {};
+  const countryLabel = basic.country || "-";
+  const fieldLabel = basic.field || "-";
+
+  let html = "";
+
+  // ---- Header ----
+  html += '<header>';
+  html += '<div class="badge">' + esc(countryLabel) + " Patent · " + esc(fieldLabel) + "</div>";
+  html += "<h1>" + esc(patent.title || "(제목 없음)") + "</h1>";
+  html += '<div class="meta">';
+  if (patent.applicant && patent.applicant.number)
+    html += metaItem("출원번호", patent.applicant.number);
+  if (patent.applicant && patent.applicant.name)
+    html += metaItem("출원인", patent.applicant.name);
+  if (patent.applicant && patent.applicant.date)
+    html += metaItem("출원일", patent.applicant.date);
+  if (patent.grant && patent.grant.date)
+    html += metaItem("등록일", patent.grant.date);
+  if (naicsPrimary.code)
+    html += metaItem("산업", naicsPrimary.code + " · " + (naicsPrimary.title || ""));
+  html += "</div></header>";
+
+  html += "<main>";
+
+  // ---- 종합 점수 ----
+  html += '<div class="card"><div class="card-title">종합 평가 점수</div><div class="score-grid">';
+  html += scoreItem("total", "종합 점수", fin.final_score, 100);
+  html += scoreItem("market", "M&A 시장 매력도", ma.ma_market_score, 50);
+  html += scoreItem("tech", "기술성", tech.tech_score, 25);
+  html += scoreItem("rights", "권리성", rights.rights_score, 25);
+  html += "</div>";
+  if (fin.evaluation)
+    html += '<div class="eval-text highlight">' + esc(fin.evaluation) + "</div>";
+  html += "</div>";
+
+  // ---- 기본정보 + IPC/NAICS ----
+  html += '<div class="two-col">';
+
+  // 기본정보
+  html += '<div class="card"><div class="card-title">특허 기본 정보</div><table class="patent-table">';
+  html += row("발명의 명칭", patent.title);
+  if (patent.applicant && patent.applicant.name) html += row("출원인", patent.applicant.name);
+  html += row("출원번호", patent.applicant && patent.applicant.number);
+  html += row("출원일", patent.applicant && patent.applicant.date);
+  html += row("등록번호", patent.grant && patent.grant.number);
+  html += row("등록일", patent.grant && patent.grant.date);
+  html += row("국가", basic.country);
+  html += row("기술 분야", basic.field);
+  if (basic.patent_type) html += row("공보 유형", basic.patent_type);
+  if (basic.patent_kind_code) html += row("Kind Code", basic.patent_kind_code);
+  html += "</table>";
+  if (patent.abstract)
+    html += '<div style="margin-top:20px;"><div class="card-title">초록</div><div class="abstract-text">' +
+      esc(patent.abstract) + "</div></div>";
+  html += "</div>";
+
+  // IPC + NAICS
+  html += '<div class="card"><div class="card-title">IPC 코드</div><div class="ipc-grid">';
+  if (ipcDescs.length) {
+    ipcDescs.forEach(ip => {
+      html += '<div class="ipc-chip"><div class="code">' + esc(ip.ipc_code) +
+        '</div><div class="desc">' + esc(ip.short_description || "") + "</div></div>";
+    });
+  } else if (patent.ipc_code) {
+    (patent.ipc_code || []).forEach(c => {
+      html += '<div class="ipc-chip"><div class="code">' + esc(c) + "</div></div>";
+    });
+  }
+  html += "</div>";
+  if (naicsPrimary.code) {
+    html += '<div style="margin-top:24px;"><div class="card-title">NAICS 산업 분류</div>' +
+      '<div class="naics-primary"><div class="naics-code">' + esc(naicsPrimary.code) + "</div>" +
+      '<div class="naics-title">' + esc(naicsPrimary.title || "") + "</div>" +
+      '<div class="naics-desc">' + esc(naicsPrimary.description || "") + "</div></div></div>";
+  }
+  html += "</div></div>";
+
+  // ---- 세부 평가 탭 ----
+  html += '<div class="card"><div class="card-title">세부 평가</div>';
+  html += '<div class="tab-wrap">' +
+    '<button class="tab-btn active" onclick="switchTab(event,\'tab-market\')">M&A 시장</button>' +
+    '<button class="tab-btn" onclick="switchTab(event,\'tab-tech\')">기술성</button>' +
+    '<button class="tab-btn" onclick="switchTab(event,\'tab-rights\')">권리성</button></div>';
+  html += marketTabContent("tab-market", true, ma);
+  html += tabContent("tab-tech", false, "기술성 평가", tech.tech_evaluation, tech.tech_reason, tech.tech_score, 25);
+  html += tabContent("tab-rights", false, "권리성 평가", rights.rights_evaluation, rights.rights_reason, rights.rights_score, 25);
+  html += "</div>";
+
+  // ---- 유사 기업 추천 ----
+  const target = rec.target_similar_companies || [];
+  const acquiror = rec.acquiror_similar_companies || [];
+  if (target.length || acquiror.length) {
+    html += '<div class="two-col">';
+    html += companyCard("유사 기업 추천 — 피인수 기업 (Target)", target);
+    html += companyCard("유사 기업 추천 — 인수 기업 (Acquiror)", acquiror);
+    html += "</div>";
+  }
+
+  // ---- M&A 패턴 ----
+  if (patterns.length) {
+    html += '<div class="card"><div class="card-title">M&A 패턴</div><div class="pattern-list">';
+    patterns.forEach(p => {
+      html += '<div class="pattern-item"><div><strong>' + esc(p.acquirer_naic) + "</strong> · " +
+        esc(p.acquirer_naic_title || "") + "</div>" +
+        '<div class="pattern-meta">비중 ' + esc(p.ratio_percent) + "% · " +
+        esc(p.relation_label || "") + " · " + esc(p.one_line_description || "") + "</div>" +
+        '<div class="pattern-reason">' + esc(p.reason || "") + "</div></div>";
+    });
+    html += "</div></div>";
+  }
+
+  html += "</main>";
+
+  document.getElementById("app").innerHTML = html;
+  initEntryAnimations();
+}
+
+// ---- 렌더 헬퍼 ----
+function metaItem(label, val) {
+  return '<div class="meta-item">' + esc(label) + " <strong>" + esc(val) + "</strong></div>";
+}
+function scoreItem(cls, label, val, max) {
+  return '<div class="score-item ' + cls + '"><div class="score-label">' + esc(label) +
+    '</div><div class="score-number">' + (val == null ? "-" : esc(val)) +
+    '</div><div class="score-max">/ ' + max + "</div></div>";
+}
+function row(label, val) {
+  if (val == null || val === "") return "";
+  return "<tr><td>" + esc(label) + "</td><td>" + esc(val) + "</td></tr>";
+}
+function scoreChip(label, score, max, subtle) {
+  if (score == null || score === "") return "";
+  let h = '<span class="score-chip' + (subtle ? " subtle" : "") + '">' + esc(label) + " " + esc(score);
+  if (max != null) h += '<span class="denom">/ ' + esc(max) + "</span>";
+  return h + "</span>";
+}
+function evalScoreSummary(items) {
+  const chips = items.map(item => scoreChip(item.label, item.score, item.max, item.subtle)).filter(Boolean);
+  return chips.length ? '<div class="eval-score-summary">' + chips.join("") + "</div>" : "";
+}
+function evalPair(title, evalText, reason, score, max) {
+  let h = '<div class="eval-pair">';
+  h += '<div class="eval-pair-head"><div class="eval-pair-title">' + esc(title) + "</div>";
+  h += scoreChip("점수", score, max, false) + "</div>";
+  h += '<div class="eval-pair-body">' + esc(evalText || "(내용 없음)") + "</div>";
+  if (reason) h += '<div class="eval-pair-reason">' + esc(reason) + "</div>";
+  return h + "</div>";
+}
+function tabContent(id, active, title, evalText, reason, score, max) {
+  let h = '<div id="' + id + '" class="tab-content' + (active ? " active" : "") + '">';
+  h += '<div class="eval-pair-list">' + evalPair(title, evalText, reason, score, max) + "</div>";
+  return h + "</div>";
+}
+function marketTabContent(id, active, ma) {
+  const p = ma.ma_market_perspectives || {};
+  const items = [
+    ["시장 동향", p.field_trend, "ma_market_field_trend_evaluation", "field_trend_reason", "field_trend_score"],
+    ["국경 간 거래", p.crossborder, "ma_market_crossborder_evaluation", "crossborder_reason", "crossborder_score"],
+    ["인수 유형", p.ma_type, "ma_market_ma_type_evaluation", "ma_type_reason", "ma_type_score"],
+    ["하이테크 적합성", p.hightech, "ma_market_hightech_evaluation", "hightech_reason", "hightech_score"],
+  ];
+
+  let body = "";
+  let pairCount = 0;
+  items.forEach(([title, obj, evalKey, reasonKey, scoreKey]) => {
+    if (!obj) return;
+    const evalText = obj[evalKey];
+    const reason = obj[reasonKey];
+    if (evalText || reason) {
+      body += evalPair(title, evalText, reason, obj[scoreKey], null);
+      pairCount += 1;
+    }
+  });
+  if (!body) body = evalPair("M&A 시장 평가", ma.ma_market_evaluation, ma.ma_market_reason, ma.ma_market_score, 50);
+
+  const summary = evalScoreSummary([
+    { label: "4관점 합계", score: ma.ma_llm_four_perspectives_sum, max: 50 },
+    { label: "정량 앵커", score: ma.ma_anchor_score, max: 50, subtle: true },
+    { label: "최종 시장 점수", score: ma.ma_market_score, max: 50 },
+  ]);
+  const gridClass = pairCount >= 4 ? "eval-pair-list market-grid" : "eval-pair-list";
+
+  return '<div id="' + id + '" class="tab-content' + (active ? " active" : "") + '">' +
+    summary + '<div class="' + gridClass + '">' + body + "</div></div>";
+}
+function companyCard(title, companies) {
+  let h = '<div class="card"><div class="card-title">' + esc(title) + '</div><div class="company-list">';
+  if (!companies.length) {
+    h += '<div class="muted">추천 기업이 없습니다.</div>';
+  }
+  companies.forEach(c => {
+    const sim = c.avg_similarity != null ? pct(c.avg_similarity) : "-";
+    h += '<div class="company-card" onclick="toggleCompany(event,this)"><div class="company-header">' +
+      '<div class="company-rank">' + esc(c.rank != null ? c.rank : "") + "</div>" +
+      '<div class="company-info"><div class="company-name">' + esc(c.company_name || "") + "</div>" +
+      '<div class="company-meta"><span>유사도: <span class="val">' + sim + "</span></span>" +
+      '<span>매칭 특허: <span class="val">' + esc(c.matched_patent_count != null ? c.matched_patent_count : "") +
+      "</span></span></div></div><div class=\"company-chevron\">▼</div></div>";
+    h += '<div class="company-patents"><div class="company-patents-inner">';
+    (c.patents || []).forEach(p => {
+      h += '<div class="patent-item" onclick="togglePatent(event,this)"><div class="patent-item-head">' +
+        '<div class="patent-item-title-wrap"><span class="patent-item-title-text">' +
+        esc(p.title || "") + '</span><span class="patent-item-chevron">▼</span></div>' +
+        '<span class="country-pill">' + esc(p.patent_country || "") + "</span></div>";
+      if (p.ipc && p.ipc.length) {
+        h += '<div class="patent-item-ipc">';
+        p.ipc.forEach(t => { h += '<span class="ipc-tag">' + esc(t) + "</span>"; });
+        h += "</div>";
+      }
+      h += '<div class="patent-item-meta">출원번호: ' + esc(p.application_number || "-") +
+        " · 출원일: " + esc(fmtDate(p.application_date)) +
+        " · 유사도: " + (p.similarity != null ? pct(p.similarity) : "-") + "</div>";
+      h += '<div class="patent-item-abstract">' + esc(p.abstract || "") + "</div></div>";
+    });
+    h += "</div></div></div>";
+  });
+  return h + "</div></div>";
+}
+
+// ---- sample.html과 동일한 인터랙션 ----
+function switchTab(event, tabId) {
+  event.preventDefault();
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  event.target.classList.add("active");
+  document.getElementById(tabId).classList.add("active");
+}
+function toggleCompany(event, el) { if (event) event.stopPropagation(); el.classList.toggle("open"); }
+function togglePatent(event, el) { if (event) event.stopPropagation(); el.classList.toggle("open"); }
+function initEntryAnimations() {
+  document.querySelectorAll("main > .card, main > .two-col").forEach((s, i) => {
+    s.classList.add("reveal-item");
+    s.style.animationDelay = (120 + i * 80) + "ms";
+  });
+}
+
+load();
+</script>
+</body>
+</html>

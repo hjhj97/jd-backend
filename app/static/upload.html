@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>특허 분석 — PDF 업로드</title>
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-muted: #59636e;
+    --blue: #0969da;
+    --green: #1a7f37;
+    --red: #cf222e;
+    --purple: #8250df;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .wrap { width: 100%; max-width: 560px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,.04); }
+  .badge { display: inline-block; background: #e7f0ff; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 14px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .sub { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+
+  .field-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; display: block; }
+
+  .dropzone { border: 2px dashed var(--border); border-radius: 12px; padding: 36px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: var(--surface2); }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--blue); background: #f0f6ff; }
+  .dropzone .icon { font-size: 36px; margin-bottom: 10px; }
+  .dropzone .dz-main { font-size: 14px; font-weight: 600; }
+  .dropzone .dz-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .dropzone.has-file { border-color: var(--green); border-style: solid; background: #f0fbf3; }
+  .file-name { font-size: 13px; font-weight: 600; color: var(--green); word-break: break-all; }
+
+  .country-row { display: flex; gap: 10px; margin: 22px 0 28px; }
+  .country-opt { flex: 1; }
+  .country-opt input { display: none; }
+  .country-opt label { display: block; text-align: center; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; background: var(--surface2); color: var(--text-muted); }
+  .country-opt input:checked + label { border-color: var(--blue); background: #e7f0ff; color: var(--blue); }
+
+  .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .progress-box { display: none; margin-top: 26px; padding: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; }
+  .progress-box.show { display: block; }
+  .progress-status { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+  .spinner { width: 18px; height: 18px; border: 2.5px solid #c8d4e3; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-msg { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  .bar { height: 6px; background: #e1e8f0; border-radius: 4px; margin-top: 14px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--purple)); border-radius: 4px; transition: width .4s ease; }
+
+  .alert { display: none; margin-top: 20px; padding: 14px 16px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+  .alert.show { display: block; }
+  .alert.error { background: #fff0f0; border: 1px solid #ffcdcd; color: var(--red); }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="badge">Patent Evaluation</div>
+    <h1>특허 분석 리포트 생성</h1>
+    <p class="sub">특허 PDF를 업로드하면 시장 매력도·기술성·권리성을 분석한 리포트를 생성합니다.</p>
+
+    <form id="form">
+      <span class="field-label">특허 PDF 파일</span>
+      <div class="dropzone" id="dropzone">
+        <div class="icon">📄</div>
+        <div class="dz-main" id="dzText">PDF 파일을 드래그하거나 클릭하여 선택</div>
+        <div class="dz-sub">최대 100MB · PDF 형식만 지원</div>
+      </div>
+      <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+
+      <div style="margin-top:24px;">
+        <span class="field-label">특허 국가</span>
+        <div class="country-row">
+          <div class="country-opt">
+            <input type="radio" name="country" id="kr" value="KR" checked>
+            <label for="kr">🇰🇷 한국 (KR)</label>
+          </div>
+          <div class="country-opt">
+            <input type="radio" name="country" id="us" value="US">
+            <label for="us">🇺🇸 미국 (US)</label>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn" disabled>분석 시작</button>
+    </form>
+
+    <div class="progress-box" id="progressBox">
+      <div class="progress-status"><span class="spinner"></span><span id="statusText">분석 준비 중…</span></div>
+      <div class="progress-msg" id="progressMsg"></div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+
+    <div class="alert error" id="errorBox"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "/api/v1";
+// 처리 단계 → 진행률(%) 대략 매핑 (UX용)
+const STAGE_PCT = {
+  queued: 8, PARSING: 20, MODEL_1: 35, MODEL_2: 48, MODEL_3: 62,
+  MODEL_4: 75, MODEL_5: 88, FORMATTING: 95, completed: 100,
+};
+const STAGE_LABEL = {
+  queued: "대기 중…", PARSING: "특허 문서 파싱 중…",
+  MODEL_1: "분석 중 (1/5)…", MODEL_2: "분석 중 (2/5)…", MODEL_3: "분석 중 (3/5)…",
+  MODEL_4: "분석 중 (4/5)…", MODEL_5: "분석 중 (5/5)…",
+  FORMATTING: "리포트 생성 중…", completed: "완료!",
+};
+
+const fileInput = document.getElementById("fileInput");
+const dropzone = document.getElementById("dropzone");
+const dzText = document.getElementById("dzText");
+const submitBtn = document.getElementById("submitBtn");
+const form = document.getElementById("form");
+const progressBox = document.getElementById("progressBox");
+const statusText = document.getElementById("statusText");
+const progressMsg = document.getElementById("progressMsg");
+const bar = document.getElementById("bar");
+const errorBox = document.getElementById("errorBox");
+
+let selectedFile = null;
+
+function pickFile(f) {
+  if (!f) return;
+  if (!f.name.toLowerCase().endsWith(".pdf")) {
+    showError("PDF 파일만 업로드할 수 있습니다.");
+    return;
+  }
+  selectedFile = f;
+  hideError();
+  dropzone.classList.add("has-file");
+  dzText.innerHTML = '<span class="file-name">' + escapeHtml(f.name) + "</span>";
+  submitBtn.disabled = false;
+}
+
+dropzone.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => pickFile(e.target.files[0]));
+["dragover", "dragenter"].forEach(ev =>
+  dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("dragover"); }));
+["dragleave", "drop"].forEach(ev =>
+  dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove("dragover"); }));
+dropzone.addEventListener("drop", (e) => pickFile(e.dataTransfer.files[0]));
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!selectedFile) return;
+  hideError();
+  setUploading(true);
+
+  const country = document.querySelector('input[name="country"]:checked').value;
+  const fd = new FormData();
+  fd.append("file", selectedFile);
+  fd.append("country", country);
+
+  try {
+    const res = await fetch(API_BASE + "/analyze", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok || !data.task_id) {
+      throw new Error(data.detail || data.msg || "업로드에 실패했습니다.");
+    }
+    // task_id 발급 즉시 결과 페이지로 이동 → 폴링/진행 표시는 결과 페이지에서 처리
+    setStatus("queued");
+    window.location.href = "/result/" + data.task_id;
+  } catch (err) {
+    showError("업로드 실패: " + err.message);
+    setUploading(false);
+  }
+});
+
+function setStatus(status, msg) {
+  statusText.textContent = STAGE_LABEL[status] || "처리 중…";
+  bar.style.width = (STAGE_PCT[status] || 10) + "%";
+  progressMsg.textContent = msg || "";
+}
+
+function setUploading(on) {
+  submitBtn.disabled = on;
+  submitBtn.textContent = on ? "분석 진행 중…" : "분석 시작";
+  progressBox.classList.toggle("show", on);
+  if (!on) bar.style.width = "0";
+}
+
+function showError(msg) { errorBox.textContent = msg; errorBox.classList.add("show"); }
+function hideError() { errorBox.classList.remove("show"); }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+</script>
+</body>
+</html>

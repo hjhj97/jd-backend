@@ -209,6 +209,26 @@ tail -f logs/error.log
 { "task_id": "...", "status": "failed", "error": "에러 메시지" }
 ```
 
+### `GET /api/v3/result/{task_id}`
+
+v3 결과 조회 엔드포인트.
+
+- 동작은 `GET /api/v1/result/{task_id}`와 동일하게 Celery 상태를 조회합니다.
+- `status`가 `completed`가 되면 실제 결과 대신 `app/static/output_v3.json` 내용을 반환합니다.
+- 결과의 `field` 값은 사용자 노출 시 축약 코드(`compu`, `bio`, `comm`, `elec`, `etc`)로 정규화됩니다.
+- `queued`, 처리 중 상태, 실패 상태는 v1과 동일 응답을 반환합니다.
+
+**Response** `200` (completed 시 예시)
+
+```json
+{
+  "success": true,
+  "task_id": "sample-task-id",
+  "status": "completed",
+  "result": {}
+}
+```
+
 ---
 
 ## 프로젝트 구조

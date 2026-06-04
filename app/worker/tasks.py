@@ -7,6 +7,7 @@ from app.config import settings
 from app.services.jdpatent_service import poll_jdpatent_result, submit_jdpatent_job
 from app.services.patent_type_service import detect_patent_type
 from app.services.pdf_service import parse_pdf_via_runpod
+from app.services.report_result_store import archive_report_result
 from app.services.s3_service import delete_pdf, generate_presigned_get_url
 from app.worker.celery_app import celery_app
 
@@ -74,6 +75,11 @@ def _run_pipeline(
     """RunPod 텍스트 추출 후 JDPatent 비동기 작업을 위임."""
 
     task.update_state(state="PARSING", meta={"msg": "PDF 파싱 중"})
+    logger.bind(
+        event="analysis_stage_changed",
+        task_id=task.request.id,
+        stage="PARSING",
+    ).info("단계 전환: PDF 파싱 중")
 
     # analyze 단계에서 plain S3 URL이 넘어오더라도, worker에서 presigned URL을
     # 재생성해 RunPod 접근 403을 방지한다.
@@ -110,6 +116,11 @@ def _run_pipeline(
     patent_type_info = detect_patent_type(text)
 
     task.update_state(state="JDPATENT_SUBMIT", meta={"msg": "JDPatent 작업 등록 중"})
+    logger.bind(
+        event="analysis_stage_changed",
+        task_id=task.request.id,
+        stage="JDPATENT_SUBMIT",
+    ).info("단계 전환: JDPatent 작업 등록 중")
     submit_jdpatent_job(
         task_id=task.request.id,
         raw_text=text,
@@ -119,6 +130,11 @@ def _run_pipeline(
     )
 
     task.update_state(state="JDPATENT_PROCESSING", meta={"msg": "JDPatent 결과 대기 중"})
+    logger.bind(
+        event="analysis_stage_changed",
+        task_id=task.request.id,
+        stage="JDPATENT_PROCESSING",
+    ).info("단계 전환: JDPatent 결과 대기 중")
     result = poll_jdpatent_result(task.request.id)
 
     if isinstance(result, dict):
@@ -129,6 +145,20 @@ def _run_pipeline(
         else:
             result["patent_type"] = patent_type_info["patent_type"]
             result["patent_kind_code"] = patent_type_info["patent_kind_code"]
+
+        try:
+            archive_report_result(
+                task_id=task.request.id,
+                result=result,
+                original_filename=original_filename,
+                country=country,
+            )
+        except Exception as exc:
+            logger.bind(
+                event="report_result_archive_failed",
+                task_id=task.request.id,
+                error=str(exc),
+            ).warning("리포트 결과 저장 실패")
 
     logger.bind(
         event="analysis_pipeline_succeeded",

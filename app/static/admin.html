@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리포트 관리자</title>
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #667085;
+    --blue: #0969da;
+    --green: #1a7f37;
+    --red: #cf222e;
+    --yellow: #9a6700;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  header { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  h1 { font-size: 18px; font-weight: 750; }
+  main { padding: 24px 28px; display: grid; gap: 16px; }
+  .toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 180px auto auto; gap: 10px; align-items: center; }
+  input, select, button { height: 36px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+  input, select { padding: 0 12px; }
+  button { padding: 0 14px; font-weight: 700; cursor: pointer; }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .summary { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); font-size: 12px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; background: #fff; font-weight: 700; }
+  .pill.done { color: var(--green); border-color: #b7dfc1; background: #f0fbf3; }
+  .pill.fail { color: var(--red); border-color: #f0b8bd; background: #fff5f5; }
+  .pill.work { color: var(--yellow); border-color: #eed8a4; background: #fff9e8; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { position: sticky; top: 0; z-index: 1; background: #f8fafc; color: #475467; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+  tr:hover td { background: #fbfdff; }
+  td.title { max-width: 380px; }
+  .title-main { font-weight: 700; line-height: 1.45; }
+  .title-sub { margin-top: 3px; color: var(--muted); font-size: 12px; word-break: break-all; }
+  .status { display: inline-flex; min-width: 74px; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 800; background: #eef2f7; color: #475467; }
+  .status.completed { color: var(--green); background: #eaf8ee; }
+  .status.failed { color: var(--red); background: #fff0f1; }
+  .status.queued, .status.worker_processing, .status.jdpatent_processing, .status.runpod_parsing, .status.jdpatent_submit { color: var(--yellow); background: #fff7df; }
+  .score-cell { white-space: nowrap; font-weight: 750; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .actions a, .actions button { height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 0 10px; font-size: 12px; font-weight: 750; text-decoration: none; }
+  .actions a.primary { border-color: var(--blue); color: var(--blue); background: #eef5ff; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
+  .detail { min-height: 320px; }
+  .detail-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .detail-title { font-size: 14px; font-weight: 800; }
+  pre { max-height: calc(100vh - 230px); overflow: auto; padding: 14px 16px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; color: #344054; }
+  .empty { padding: 40px 16px; color: var(--muted); text-align: center; font-size: 13px; }
+  .error { color: var(--red); }
+  @media (max-width: 980px) {
+    .toolbar { grid-template-columns: 1fr; }
+    .layout { grid-template-columns: 1fr; }
+    header { padding: 0 18px; }
+    main { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>리포트 관리자</h1>
+  <a href="/sample" style="color:var(--blue); font-size:13px; font-weight:700; text-decoration:none;">업로드</a>
+</header>
+<main>
+  <div class="toolbar">
+    <input id="token" type="password" placeholder="Admin token">
+    <select id="statusFilter">
+      <option value="">전체 상태</option>
+      <option value="completed">완료</option>
+      <option value="queued">대기/진행</option>
+      <option value="failed">실패</option>
+    </select>
+    <input id="query" type="search" placeholder="제목, 출원인, task id">
+    <button class="primary" id="refreshBtn">조회</button>
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <div class="summary" id="summary"></div>
+      <div style="overflow:auto; max-height:calc(100vh - 190px);">
+        <table>
+          <thead>
+            <tr>
+              <th>상태</th>
+              <th>리포트</th>
+              <th>점수</th>
+              <th>저장/요청</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="card detail">
+      <div class="detail-head">
+        <div class="detail-title">상세</div>
+        <button id="copyBtn" disabled>복사</button>
+      </div>
+      <pre id="detailBody">선택된 리포트가 없습니다.</pre>
+    </aside>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { reports: [], detailText: "" };
+
+function esc(v) {
+  return String(v == null ? "" : v)
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+function shortId(id) {
+  return id ? id.slice(0, 8) : "-";
+}
+function statusLabel(status) {
+  const labels = {
+    completed: "완료",
+    failed: "실패",
+    queued: "대기",
+    runpod_parsing: "OCR",
+    jdpatent_submit: "등록",
+    jdpatent_processing: "분석",
+    worker_processing: "처리",
+    other_active: "진행",
+  };
+  return labels[status] || status || "-";
+}
+function statusClass(status) {
+  return ["completed", "failed", "queued", "runpod_parsing", "jdpatent_submit", "jdpatent_processing", "worker_processing", "other_active"].includes(status)
+    ? status
+    : "";
+}
+function scoreText(r) {
+  const parts = [];
+  if (r.final_score != null) parts.push("종합 " + r.final_score);
+  if (r.ma_market_score != null) parts.push("M&A " + r.ma_market_score);
+  if (r.tech_score != null) parts.push("기술 " + r.tech_score);
+  if (r.rights_score != null) parts.push("권리 " + r.rights_score);
+  return parts.length ? parts.join(" · ") : "-";
+}
+function timeText(r) {
+  return r.saved_at || r.completed_at || r.failed_at || r.requested_at || "-";
+}
+function applyFilters() {
+  const q = $("query").value.trim().toLowerCase();
+  const status = $("statusFilter").value;
+  return state.reports.filter((r) => {
+    const s = r.status || "";
+    if (status === "completed" && s !== "completed") return false;
+    if (status === "failed" && s !== "failed") return false;
+    if (status === "queued" && (s === "completed" || s === "failed")) return false;
+    if (!q) return true;
+    const hay = [r.task_id, r.title, r.applicant, r.original_filename, r.pdf_name, r.country, r.field].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+}
+function renderSummary(items) {
+  const done = items.filter(r => r.status === "completed").length;
+  const fail = items.filter(r => r.status === "failed").length;
+  const active = items.length - done - fail;
+  $("summary").innerHTML =
+    '<span class="pill">총 ' + items.length + '</span>' +
+    '<span class="pill done">완료 ' + done + '</span>' +
+    '<span class="pill work">진행 ' + active + '</span>' +
+    '<span class="pill fail">실패 ' + fail + '</span>';
+}
+function renderRows() {
+  const items = applyFilters();
+  renderSummary(items);
+  if (!items.length) {
+    $("rows").innerHTML = '<tr><td colspan="5"><div class="empty">조회된 리포트가 없습니다.</div></td></tr>';
+    return;
+  }
+  $("rows").innerHTML = items.map((r) => {
+    const title = r.title || r.original_filename || r.pdf_name || "(제목 없음)";
+    const sub = [r.applicant, r.country, r.field, shortId(r.task_id)].filter(Boolean).join(" · ");
+    const detailDisabled = r.has_result ? "" : " disabled";
+    const reportLink = r.has_result ? '<a class="primary" href="/result/' + encodeURIComponent(r.task_id) + '" target="_blank">열기</a>' : "";
+    return '<tr>' +
+      '<td><span class="status ' + esc(statusClass(r.status)) + '">' + esc(statusLabel(r.status)) + '</span></td>' +
+      '<td class="title"><div class="title-main">' + esc(title) + '</div><div class="title-sub">' + esc(sub) + '</div></td>' +
+      '<td class="score-cell">' + esc(scoreText(r)) + '</td>' +
+      '<td>' + esc(timeText(r)) + '</td>' +
+      '<td><div class="actions"><button data-task="' + esc(r.task_id) + '"' + detailDisabled + '>상세</button>' + reportLink + '</div></td>' +
+      '</tr>';
+  }).join("");
+
+  document.querySelectorAll("button[data-task]").forEach((btn) => {
+    btn.addEventListener("click", () => loadDetail(btn.dataset.task));
+  });
+}
+async function loadReports() {
+  const token = $("token").value.trim();
+  localStorage.setItem("adminToken", token);
+  $("refreshBtn").disabled = true;
+  $("rows").innerHTML = '<tr><td colspan="5"><div class="empty">조회 중...</div></td></tr>';
+  try {
+    const res = await fetch("/admin/reports", { headers: { "X-Admin-Token": token } });
+    const data = await res.json();
+    if (!res.ok || data.success === false) throw new Error(data.msg || data.detail || "조회 실패");
+    state.reports = data.reports || [];
+    renderRows();
+  } catch (err) {
+    $("summary").innerHTML = "";
+    $("rows").innerHTML = '<tr><td colspan="5"><div class="empty error">' + esc(err.message) + '</div></td></tr>';
+  } finally {
+    $("refreshBtn").disabled = false;
+  }
+}
+async function loadDetail(taskId) {
+  const token = $("token").value.trim();
+  $("detailBody").textContent = "조회 중...";
+  $("copyBtn").disabled = true;
+  try {
+    const res = await fetch("/admin/reports/" + encodeURIComponent(taskId), { headers: { "X-Admin-Token": token } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.msg || data.detail || "상세 조회 실패");
+    state.detailText = JSON.stringify(data, null, 2);
+    $("detailBody").textContent = state.detailText;
+    $("copyBtn").disabled = false;
+  } catch (err) {
+    state.detailText = "";
+    $("detailBody").textContent = err.message;
+  }
+}
+
+$("refreshBtn").addEventListener("click", loadReports);
+$("query").addEventListener("input", renderRows);
+$("statusFilter").addEventListener("change", renderRows);
+$("copyBtn").addEventListener("click", async () => {
+  if (!state.detailText) return;
+  await navigator.clipboard.writeText(state.detailText);
+});
+$("token").value = localStorage.getItem("adminToken") || "";
+</script>
+</body>
+</html>
