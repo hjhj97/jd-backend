@@ -171,6 +171,8 @@ _LOG_VIEWER_PATH = _STATIC_DIR / "log_viewer.html"
 _UPLOAD_PATH = _STATIC_DIR / "upload.html"
 _REPORT_PATH = _STATIC_DIR / "report.html"
 _ADMIN_PATH = _STATIC_DIR / "admin.html"
+_OG_IMAGE_PATH = _STATIC_DIR / "og-image.svg"
+_FAVICON_PATH = _STATIC_DIR / "favicon.svg"
 _APP_LOG_PATH = Path("logs/app.log")
 _ERROR_LOG_PATH = Path("logs/error.log")
 _LOG_STAGE_LOOKBACK_LIMIT = 3000
@@ -802,6 +804,26 @@ async def log_queue_snapshot():
             "other_active": stage_task_ids["other_active"],
         },
     }
+
+
+@app.get("/og-image.svg")
+async def og_image():
+    """업로드 화면의 Open Graph / Twitter 카드 이미지."""
+    return FileResponse(
+        _OG_IMAGE_PATH,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/favicon.svg")
+async def favicon_svg():
+    """사이트 파비콘 (SVG)."""
+    return FileResponse(
+        _FAVICON_PATH,
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @app.get("/sample")
