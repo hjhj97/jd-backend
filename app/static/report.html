@@ -223,7 +223,6 @@
   .load-banner-text { flex: 1; min-width: 200px; text-align: left; }
   .load-banner-title { font-size: 16px; font-weight: 700; color: var(--text); }
   .load-banner-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
-  .load-banner-elapsed { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 
   /* 단계 스텝퍼 */
   .stepper { display: flex; gap: 0; margin: 18px 0 4px; }
@@ -292,15 +291,7 @@ const FAILURE_MSG = {
   jdpatent_timeout: "특허 분석 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요.",
 };
 
-const startedAt = Date.now();
-let elapsedTimer = null;
 let loadingMounted = false;
-function tickElapsed() {
-  const el = document.getElementById("loadingElapsed");
-  if (!el) return;
-  const s = Math.floor((Date.now() - startedAt) / 1000);
-  el.textContent = "경과 " + Math.floor(s / 60) + "분 " + (s % 60) + "초";
-}
 
 // 스켈레톤 한 칸
 function skel(w, h, extra) {
@@ -317,7 +308,6 @@ function mountLoading() {
     '<div class="load-banner-title" id="loadingTitle">분석 진행 중…</div>' +
     '<div class="load-banner-sub" id="loadingSub">특허를 분석하고 있습니다. 보통 5~7분 정도 소요됩니다.</div>' +
     '</div>' +
-    '<div class="load-banner-elapsed" id="loadingElapsed"></div>' +
     '</div>' +
     '<div class="stepper" id="stepper">' +
     STAGES.filter(s => s.key !== "completed").map((s, i) =>
@@ -375,7 +365,6 @@ function updateLoading(stageKey) {
 
 async function load() {
   if (!loadingMounted) mountLoading();
-  if (!elapsedTimer) { tickElapsed(); elapsedTimer = setInterval(tickElapsed, 1000); }
   const taskId = getTaskId();
   let data;
   try {
@@ -389,7 +378,6 @@ async function load() {
   }
 
   if (data.status === "completed" && data.result) {
-    clearInterval(elapsedTimer);
     render(data.result);
     return;
   }
@@ -397,7 +385,6 @@ async function load() {
   // 실패는 항상 success:false 로 온다 (failed / not_a_patent_document / *_timeout 등).
   // 그 외 success !== false 인 모든 상태(PARSING, JDPATENT_PROCESSING 등)는 "진행 중"이다.
   if (data.success === false) {
-    clearInterval(elapsedTimer);
     const msg = FAILURE_MSG[data.status] || data.msg || ("상태: " + (data.status || "알 수 없음"));
     return renderError("분석에 실패했습니다.", msg);
   }
