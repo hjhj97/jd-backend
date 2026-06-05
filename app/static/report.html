@@ -22,6 +22,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; letter-spacing: 0; }
   header { background: linear-gradient(135deg, #fbfdff 0%, #eef4ff 100%); border-bottom: 1px solid var(--border); padding: 40px 48px 32px; opacity: 0; transform: translateY(-8px); animation: headerIn .55s cubic-bezier(.2,.75,.2,1) forwards; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .new-analysis-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 650; color: var(--blue); text-decoration: none; border: 1px solid #b6d0f7; background: #fff; padding: 6px 13px; border-radius: 8px; transition: background .15s, border-color .15s; }
+  .new-analysis-link:hover { background: #eef5ff; border-color: var(--blue); }
+  .requested-at { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
   .badge { display: inline-block; background: #e7f0ff; color: var(--blue); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
   header h1 { font-size: 22px; font-weight: 700; line-height: 1.4; max-width: 800px; margin-bottom: 16px; }
   .meta { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -280,6 +284,17 @@ function fmtDate(s) {
   if (/^\d{8}$/.test(t)) return t.slice(0, 4) + "-" + t.slice(4, 6) + "-" + t.slice(6, 8);
   return t;
 }
+// ISO 시각을 한국시간(KST) "YYYY-MM-DD HH:mm" 으로 표시
+function fmtKST(s) {
+  if (!s) return null;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return null;
+  const p = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {});
+  return p.year + "-" + p.month + "-" + p.day + " " + p.hour + ":" + p.minute + " (KST)";
+}
 
 // 처리 단계 정의 (UX용). 실제 worker state: queued / PARSING / JDPATENT_SUBMIT / JDPATENT_PROCESSING
 const STAGES = [
@@ -387,7 +402,7 @@ async function load() {
   }
 
   if (data.status === "completed" && data.result) {
-    render(data.result);
+    render(data.result, data.requested_at);
     return;
   }
 
@@ -410,7 +425,7 @@ function renderError(title, sub) {
     '<a class="back-link" href="/sample">← 새 분석 시작</a></div>';
 }
 
-function render(r) {
+function render(r, requestedAt) {
   const basic = r.basic_info || {};
   const patent = basic.patent || {};
   const naics = r.naics || {};
@@ -431,6 +446,11 @@ function render(r) {
 
   // ---- Header ----
   html += '<header>';
+  html += '<div class="header-top">';
+  html += '<a class="new-analysis-link" href="/sample">＋ 새 분석</a>';
+  const reqText = fmtKST(requestedAt);
+  if (reqText) html += '<div class="requested-at">요청 시각 · ' + esc(reqText) + "</div>";
+  html += "</div>";
   html += '<div class="badge">' + esc(countryLabel) + " Patent · " + esc(fieldLabel) + "</div>";
   html += "<h1>" + esc(patent.title || "(제목 없음)") + "</h1>";
   html += '<div class="meta">';

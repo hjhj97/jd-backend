@@ -10,7 +10,11 @@ from fastapi.responses import FileResponse
 from loguru import logger
 
 from app.services.s3_service import upload_pdf
-from app.services.report_result_store import get_archived_report
+from app.services.report_result_store import (
+    get_archived_report,
+    get_request_meta,
+    save_request_meta,
+)
 from app.services.temp_pdf_service import resolve_temp_pdf_path, save_temp_pdf
 from app.worker.celery_app import celery_app
 from app.worker.tasks import process_patent
@@ -228,6 +232,13 @@ async def analyze_patent(
         ).exception(f"분석 작업 큐 등록 실패: {exc}")
         raise
 
+    # 요청 접수 시각 저장 (대기/진행 중에도 조회 가능하도록)
+    save_request_meta(
+        task.id,
+        filename=file.filename,
+        country=country,
+    )
+
     logger.bind(
         event="pdf_upload_received",
         task_id=task.id,
@@ -415,6 +426,8 @@ async def get_result(task_id: str):
 
     task = AsyncResult(task_id, app=celery_app)
     archived = get_archived_report(task_id)
+    req_meta = get_request_meta(task_id)
+    requested_at = req_meta.get("requested_at") if req_meta else None
 
     # PENDING은 대기열 혼잡 상황에서 정상 task도 길게 유지될 수 있으므로
     # 404로 판정하지 않고 queued로 응답한다.
@@ -426,8 +439,14 @@ async def get_result(task_id: str):
                 "status": "completed",
                 "result": archived["result"],
                 "archived": True,
+                "requested_at": requested_at,
             }
-        return {"success": True, "task_id": task_id, "status": "queued"}
+        return {
+            "success": True,
+            "task_id": task_id,
+            "status": "queued",
+            "requested_at": requested_at,
+        }
 
     elif task.state == "SUCCESS":
         result = archived["result"] if archived and isinstance(archived.get("result"), dict) else task.result
@@ -437,6 +456,7 @@ async def get_result(task_id: str):
             "status": "completed",
             "result": result,
             "archived": bool(archived),
+            "requested_at": requested_at,
         }
 
     elif task.state == "FAILURE":
@@ -450,6 +470,7 @@ async def get_result(task_id: str):
                 "msg": _JDPATENT_ERROR_MESSAGES.get(
                     error_code, _DEFAULT_JDPATENT_ERROR_MESSAGE
                 ),
+                "requested_at": requested_at,
             }
 
         return {
@@ -457,6 +478,7 @@ async def get_result(task_id: str):
             "task_id": task_id,
             "status": "failed",
             "msg": _DEFAULT_JDPATENT_ERROR_MESSAGE,
+            "requested_at": requested_at,
         }
 
     else:
@@ -467,4 +489,5 @@ async def get_result(task_id: str):
             "task_id": task_id,
             "status": task.state,
             "msg": meta.get("msg", ""),
+            "requested_at": requested_at,
         }

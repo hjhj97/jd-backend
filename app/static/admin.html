@@ -46,6 +46,9 @@
   .status.failed { color: var(--red); background: #fff0f1; }
   .status.queued, .status.worker_processing, .status.jdpatent_processing, .status.runpod_parsing, .status.jdpatent_submit { color: var(--yellow); background: #fff7df; }
   .score-cell { white-space: nowrap; font-weight: 750; }
+  .time-cell { white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .time-cell .time-req { color: var(--muted); }
+  .time-cell .time-done { color: var(--text); font-weight: 650; margin-top: 2px; }
   .actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .actions a, .actions button { height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); padding: 0 10px; font-size: 12px; font-weight: 750; text-decoration: none; }
   .actions a.primary { border-color: var(--blue); color: var(--blue); background: #eef5ff; }
@@ -91,7 +94,7 @@
               <th>상태</th>
               <th>리포트</th>
               <th>점수</th>
-              <th>저장/요청</th>
+              <th>시간 (KST)</th>
               <th>작업</th>
             </tr>
           </thead>
@@ -149,8 +152,26 @@ function scoreText(r) {
   if (r.rights_score != null) parts.push("권리 " + r.rights_score);
   return parts.length ? parts.join(" · ") : "-";
 }
+// ISO 시각을 한국시간(KST) "MM-DD HH:mm" 으로 표시
+function fmtKST(s, withYear) {
+  if (!s) return null;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return null;
+  const p = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+  }).formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {});
+  const date = withYear ? (p.year + "-" + p.month + "-" + p.day) : (p.month + "-" + p.day);
+  return date + " " + p.hour + ":" + p.minute;
+}
 function timeText(r) {
-  return r.saved_at || r.completed_at || r.failed_at || r.requested_at || "-";
+  const req = fmtKST(r.requested_at);
+  const done = fmtKST(r.saved_at || r.completed_at || r.failed_at);
+  const rows = [];
+  if (req) rows.push('<div class="time-req">요청 ' + esc(req) + '</div>');
+  if (done) rows.push('<div class="time-done">' +
+    (r.status === "failed" ? "실패 " : "완료 ") + esc(done) + '</div>');
+  return rows.length ? rows.join("") : "-";
 }
 function applyFilters() {
   const q = $("query").value.trim().toLowerCase();
@@ -191,7 +212,7 @@ function renderRows() {
       '<td><span class="status ' + esc(statusClass(r.status)) + '">' + esc(statusLabel(r.status)) + '</span></td>' +
       '<td class="title"><div class="title-main">' + esc(title) + '</div><div class="title-sub">' + esc(sub) + '</div></td>' +
       '<td class="score-cell">' + esc(scoreText(r)) + '</td>' +
-      '<td>' + esc(timeText(r)) + '</td>' +
+      '<td class="time-cell">' + timeText(r) + '</td>' +
       '<td><div class="actions"><button data-task="' + esc(r.task_id) + '"' + detailDisabled + '>상세</button>' + reportLink + '</div></td>' +
       '</tr>';
   }).join("");
